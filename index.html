@@ -3403,7 +3403,10 @@ function leaveGuest(){ persistGuest(); netStop(true); setTimeout(()=>location.re
 const DEV_HASH='12oor1q';
 const devHash = s => { let x=2166136261>>>0; for(const c of s.toUpperCase()){ x^=c.charCodeAt(0); x=Math.imul(x,16777619)>>>0; } return x.toString(36); };
 let devTaps=[];
+// mode créateur : absent des versions App Store / Play Store (Apple refuse les fonctions cachées), présent sur le site et l'APK
+const STORE_BUILD = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 function devTap(){
+  if(STORE_BUILD) return;
   const now=Date.now(); devTaps=devTaps.filter(t=>now-t<3000); devTaps.push(now);
   if(devTaps.length<7) return false;
   devTaps=[]; if(guestView) return true;
