@@ -38,6 +38,7 @@ img{max-width:100%}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{background:#1f3f43;color:var(--ink);font-family:var(--body);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button,.mbtn,.btn{touch-action:manipulation}
 #app{position:relative;height:100%;overflow:hidden}
 canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
@@ -320,6 +321,15 @@ window.FournilNative={monetized:false,privacyUrl:'confidentialite.html',
 <script>
 
 const __boot = () => {
+// navigateur mobile (Safari ignore « user-scalable=no ») : pas de zoom par double tape ni par pincement.
+// Une 2e tape rapide sur un bouton est quand même prise en compte.
+(()=>{ let last=0;
+  document.addEventListener('touchend',e=>{ const n=Date.now(), t=e.target;
+    if(n-last<350 && !(t.closest && t.closest('input,textarea,select'))){ e.preventDefault(); const b=t.closest && t.closest('button,[data-menu],a'); if(b) b.click(); }
+    last=n; },{passive:false});
+  ['gesturestart','gesturechange','gestureend'].forEach(k=>document.addEventListener(k,e=>e.preventDefault(),{passive:false}));
+  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+})();
 const $ = id => document.getElementById(id);
 const NATIVE = window.FournilNative || null;   // présent seulement dans l'app iOS/Android
 // version gratuite : ni pub ni achat, le bonus « Ventes ×2 » se recharge tout seul
