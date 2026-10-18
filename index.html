@@ -386,7 +386,7 @@ const SHOPS = [
    B:{k:'cafe',st:'Machine à café',label:'cafés',price:5,rate:2.6,look:'machine'},
    C:{k:'tarte',st:'Four à tartes',label:'tartes',price:12,rate:3.8,look:'oven'}},
   {name:'Le Fast-food', wall:'#b8322a', brick:'#d24a3c', deco:['burger','fries'], staff:'Équipier', mech:'drive', pests:['cockroach','rat','raccoon'],
-   extra:{label:'Panneau du drive',icon:'signpost'}, intro:'Des voitures font la queue au drive, à gauche de la cuisine. Apporte au guichet ce que la première commande, vite : plus tu es rapide, plus elle paie. Si elle attend trop, elle klaxonne et repart !',
+   extra:{label:'Ouvrir le drive',icon:'signpost'}, intro:'Ouvre le drive dès que tu peux : des voitures font la queue à gauche de la cuisine. Apporte au guichet ce que la première commande, vite : plus tu es rapide, plus elle paie. Si elle attend trop, elle klaxonne et repart !',
    A:{k:'fries',st:'Friteuse',label:'frites',price:3,rate:1.8,look:'oven'},
    B:{k:'soda',st:'Fontaine à soda',label:'sodas',price:4,rate:2.2,look:'machine'},
    C:{k:'burger',st:'Grill à burgers',label:'burgers',price:10,rate:3.4,look:'oven'}},
@@ -475,15 +475,15 @@ const PADS = [
   {id:'t4',     cost:750,  x:2.2, y:16.6, label:'Table 4'},
   {id:'bench2', cost:900,  x:8.6, y:7.2, label:'2e plan de travail'},
   {id:'decor',  cost:1100, x:3.6, y:11.4, label:'Déco cosy'},
-  {id:'c2',     cost:1500, x:12.6,y:2.6},
+  {id:'c2',     cost:1250, x:12.6,y:2.6},
   {id:'t5',     cost:1000, x:9.8, y:16.6, label:'Table 5'},
   {id:'t6',     cost:1300, x:12.2,y:16.6, label:'Table 6'},
   {id:'waiter2',cost:1500, x:8.0, y:11.0, label:'2e serveur'},
-  {id:'o1',     cost:1600, x:1.9, y:21.75, label:'Terrasse : table 1'},
-  {id:'o2',     cost:1900, x:4.3, y:21.75, label:'Terrasse 2'},
-  {id:'o3',     cost:2300, x:9.7, y:21.75, label:'Terrasse 3'},
-  {id:'o4',     cost:2700, x:12.1,y:21.75, label:'Terrasse 4'},
-  {id:'accountant',cost:2900,x:2.2, y:6.3, label:'Comptable'},
+  {id:'o1',     cost:1300, x:1.9, y:21.75, label:'Terrasse : table 1'},
+  {id:'o2',     cost:1450, x:4.3, y:21.75, label:'Terrasse 2'},
+  {id:'o3',     cost:1650, x:9.7, y:21.75, label:'Terrasse 3'},
+  {id:'o4',     cost:1850, x:12.1,y:21.75, label:'Terrasse 4'},
+  {id:'accountant',cost:2400,x:2.2, y:6.3, label:'Comptable'},
   {id:'tech',   cost:3200, x:10.6,y:6.2, label:'Technicien'},
   {id:'timer',  cost:3600, x:2.2, y:6.3, label:'Minuteur de précision'},
   {id:'shopcat',cost:3900, x:10.6,y:6.2, label:'Chat de la maison'},
@@ -492,6 +492,8 @@ const PADS = [
   {id:'sign',   cost:5500, x:6.8, y:5.0, label:'Enseigne dorée'},
 ];
 const GASTRO_OFF = ['bench','bench2','assembler','cashier','t1','t2','t3'];   // au resto chic : pas de caisse ni de formules, 3 tables offertes
+// à partir de la 4e boutique, tout coûte un peu plus : chaque boutique garde sa durée
+const costMul = () => save.shop>=3 ? 1+.35*(save.shop-2) : 1;
 const padList = () => PADS.filter(p => (p.id!=='mech' || SHOP.extra) && (p.id!=='courier' || SHOP.mech==='drive') && (p.id!=='bar' || SHOP.mech==='gastro') && !(SHOP.mech==='gastro' && GASTRO_OFF.includes(p.id)));
 
 /* ================= sauvegarde ================= */
@@ -855,9 +857,9 @@ const isNight = () => dayT>.88 || dayT<.08;
 const raining = () => ev && ev.type==='rain';
 const production = () => STATIONS.filter(unlockedStation).reduce((a,s)=>a+1/srate(s),0);
 const popularity = () => (1 + Math.min((save.play||0)/900,.6) + (has('sign')?.2:0)) * (.6+.12*rating()) * dayFactor() * (buzzT>0?1.6:1) * (raining()?.8:1) * boostMul('crowd') * (contest?1.3:1) * (guestP?1.35:1);
-const spawnInterval = () => Math.max(.7, Math.min(isGastro()?14:6, 2.2/(.8*production()*popularity())*(isGastro()?2.6:1)));
+const spawnInterval = () => Math.max(.7, Math.min(isGastro()?9:6, 2.2/(.8*production()*popularity())*(isGastro()?1.7:1)*(ev&&EVENTS[ev.type].crowd||1)));
 const maxQ = () => Math.min(14, 3 + STATIONS.filter(unlockedStation).length);
-const patienceMul = () => (has('music')?1.3:1) * (perk('patience')?1.1:1) * uniPat() * (hasBar()?1.15:1);
+const patienceMul = () => Math.max(.72, 1-.01*save.done.length) * (has('music')?1.3:1) * (perk('patience')?1.1:1) * uniPat() * (hasBar()?1.15:1);
 
 /* ================= hors ligne & ville ================= */
 let offline = 0;
@@ -910,24 +912,25 @@ function newCustomer(kind,opts={}){
   const roll=Math.random(), plain=!vip && !reg && !opts.special && save.done.length>=5;
   const rushy = plain && roll<.1, glutton = plain && roll>=.1 && roll<.17;
   // à table, on vient seul, à deux ou à trois
-  const pr=Math.random(), party = kind==='table' && !suit ? (pr<.5?1:pr<.82?2:3) : 1;
+  const pr=Math.random(), party = kind==='table' && !suit ? (ev&&ev.type==='match'?3:pr<.5?1:pr<.82?2:3) : 1;
   const base = kind==='table' ? party+Math.floor(Math.random()*(party+1)) : 1+Math.floor(Math.random()*3);
-  const n=base+(vip?2:0)+(opts.special?1:0)+(glutton?3:0);
+  const n=base+(vip?2:0)+(opts.special?1:0)+(glutton?3:0)+(ev&&ev.type==='marche'&&kind==='queue'?2:0);
   let courses=null;
-  if(isGastro() && kind==='table'){ courses=(hasBar()&&Math.random()<.5?['K']:[]).concat(['A','B','C'].filter(sl=>prods.some(p=>PRODUCTS[p].slot===sl))); Object.assign(want,courseWant(courses[0],party)); }
+  if(isGastro() && kind==='table'){ courses=(hasBar()&&Math.random()<.5?['K']:[]).concat(['A','B','C'].filter(sl=>prods.some(p=>PRODUCTS[p].slot===sl))); if(suit){ const b=courses.includes('B')?'B':courses[courses.length-1]; courses=[b]; } Object.assign(want,courseWant(courses[0],party)); }
   else if(kind==='bar') want.cocktail=1+(Math.random()<.3?1:0);
   else for(let i=0;i<n;i++){ let r=Math.random()*tot, k=0; while(k<prods.length-1 && (r-=wts[k])>0) k++; want[prods[k]]=(want[prods[k]]||0)+1; }
   if(!courses && kind!=='bar' && availMenus().length && Math.random()<(menuStock()+benchOut()>0 || has('assembler') ? .3 : .05)){ want[pick(availMenus())]=1+(Math.random()<.25?1:0); }
   if(reg && !courses && kind!=='bar'){ let h=0; for(const ch of reg.id) h+=ch.charCodeAt(0); const fav=prods[h%prods.length]; want[fav]=(want[fav]||0)+1; }
   if(vip) sfx('vip');
   const side=Math.random()<.5, hue=Math.floor(Math.random()*360);
-  const pat=(kind==='table'?55:42)*patienceMul()*(vip?.8:1)*(opts.special==='critic'?.75:1)*(reg?1.4:1)*(rushy?.55:1)*(glutton?1.3:1)*(courses?.8:1)*(1+.12*(party-1))*(suit?.4:1);
+  const pat=(kind==='table'?55:42)*patienceMul()*(vip?.8:1)*(opts.special==='critic'?.75:1)*(reg?1.4:1)*(rushy?.55:1)*(glutton?1.3:1)*(courses?.62:1)*(1+.12*(party-1))*(suit?.5:1);
   const mates=[...Array(party-1)].map(()=>({face:pick(FACES)+'_'+pick(TONES),col:`hsl(${Math.floor(Math.random()*360)},55%,58%)`}));
   const c={id:++entSeq,kind,x:side?-.6:14.6,y:WALK_Y+(Math.random()-.5)*.3,want,got:{},state:'in',face:suit?'tux_'+pick(TONES):reg?reg.face:opts.face||pick(FACES)+'_'+pick(TONES),suit, reg:reg&&reg.id, regName:reg&&reg.name,
-    vip,special:opts.special,tourist:opts.tourist,rushy:rushy&&!courses,glutton:glutton&&!courses,courses,course:0,party,mates,col:suit?'#16161b':vip?'#ffc23d':opts.special==='critic'?'#2a1c14':`hsl(${hue},55%,58%)`,
+    vip,special:opts.special,tourist:opts.tourist,gala:!!(ev&&ev.type==='gala'),rushy:rushy&&!courses,glutton:glutton&&!courses,courses,course:0,party,mates,col:suit?'#16161b':vip?'#ffc23d':opts.special==='critic'?'#2a1c14':`hsl(${hue},55%,58%)`,
     t:0,walk:0,pay:0,pat,patMax:pat};
   if(kind==='table'){ c.table=opts.table; c.table.busy=c; }
   if(kind==='bar'){ c.stool=opts.stool; bar.stools[c.stool]=c.id; }
+  if(suit) stat('suits');
   customers.push(c); meetFace(c.face); return c;
 }
 // un service du resto chic : chaque convive choisit son plat parmi ceux de la carte
@@ -943,7 +946,7 @@ function spawnCustomer(opts={}){
   if(isGastro()){ const st=freeStools();
     if(st.length && !opts.special && (!freeT.length || Math.random()<.3)) return newCustomer('bar',{...opts,stool:pick(st)});
     // rarement, un client en costume noir
-    if(freeT.length && !opts.special && staffList().length && save.done.length>=3 && !customers.some(c=>c.suit && c.state!=='out') && Math.random()<.07) return newCustomer('table',{...opts,table:pick(freeT),suit:true});
+    if(freeT.length && !opts.special && staffList().length && save.done.length>=3 && !customers.some(c=>c.suit && c.state!=='out') && Math.random()<(ev&&ev.type==='gala'?.12:.04)) return newCustomer('table',{...opts,table:pick(freeT),suit:true});
     return freeT.length ? newCustomer('table',{...opts,table:pick(freeT)}) : null; }
   const qLen=customers.filter(c=>c.kind==='queue'&&c.state!=='out').length;
   const tablePref = raining()?.35:.45;
@@ -1029,7 +1032,7 @@ function served(c,mult){
   stat('served'); statMax('bestStreak',streak); if(contest) contest.n++; if(isNight()) stat('night'); if(c.special==='critic' && stars===5) stat('critic5');
   if(c.special==='critic'){ fx.push({x:c.x,y:c.y-1.2,txt:'★'.repeat(stars),col:'#ffc23d',t:0,big:true}); sfx('unlock'); }
   if(c.special==='influ'){ buzzT=90; toast('Vidéo publiée : plus de clients pendant 90 s'); sfx('unlock'); }
-  const tipPct = (Math.min(streak-1,10)*.1 + (c.vip?2:0) + (c.special==='critic'?3:0) + (c.tourist?.2:0) + (c.rushy?.5:0) + (c.suit?1.5:0)) * (perk('tips')?1.2:1);
+  const tipPct = (Math.min(streak-1,10)*.1 + (c.vip?2:0) + (c.special==='critic'?3:0) + (c.tourist?.2:0) + (c.rushy?.5:0) + (c.suit?1.5:0) + (c.gala?.5:0)) * (perk('tips')?1.2:1);
   gainXP(c.vip?3:c.kind==='table'?2:1);
   return Math.round(c.pay*mult*(1+tipPct)*(rushT>0?2:1)*(c.server?uf(c.server,'tips'):1));
 }
@@ -1063,9 +1066,16 @@ const EVENTS = {
   influ: {icon:'phone',   name:'Influenceuse en visite', dur:60},
   rain:  {icon:'rain',    name:'Averse', dur:80},
   boss:  {icon:'crown',   name:'Le Roi des rats', dur:40},
+  marche:{icon:'basket',  name:'Jour de marché : grosses commandes', dur:60, crowd:.75, shop:0},
+  rushdrive:{icon:'car',  name:'Rush au drive', dur:60, shop:1},
+  gala:  {icon:'tophat',  name:'Soirée de gala : additions ×1,5', dur:75, crowd:.8, shop:2},
+  canicule:{icon:'sun',   name:'Canicule : foule et glaces qui fondent', dur:60, crowd:.6, shop:3},
+  match: {icon:'pizza',   name:'Soir de match : tablées de 3', dur:60, crowd:.75, shop:4},
 };
 function startEvent(){
   const pool=['bus','critic','influ']; if(save.done.length>=6) pool.push('invasion'); if(save.done.length>=9 && !pests.some(p=>p.kind==='boss')) pool.push('boss'); if(openTables().some(t=>t.out)) pool.push('rain','rain'); else pool.push('rain');
+  const own=Object.keys(EVENTS).find(k=>EVENTS[k].shop===save.shop%SHOPS.length);
+  if(own && save.done.length>=4 && (own!=='rushdrive'||has('mech'))) pool.push(own,own);
   const type=pick(pool); ev={type,t:EVENTS[type].dur,max:EVENTS[type].dur,n:0}; sfx('vip');
   if(type==='bus') bus={x:-4,stop:false,t:0};
   if(type==='boss'){ spawnPest('boss'); ev.p=pests[pests.length-1]; }
@@ -1139,7 +1149,7 @@ function update(dt){
     if(c.state==='wait'||c.state==='sit'){ c.pat-=dt*(raining()&&c.table&&c.table.out?2:1); c.wait=(c.wait||0)+dt; if(c.pat<=0){ if(!(c.suit && startHunt(c))) leave(c,true); continue; } }
     if(c.state==='out') continue;
     if(c.state==='eat' && c.courses && c.course<c.courses.length-1){ c.eatT-=dt; if(c.eatT<=0){
-      c.course++; const sl=c.courses[c.course]; c.want=courseWant(sl,c.party); c.got={}; c.state='sit'; c.pat=c.patMax; c.wait=0; c.settled=false;
+      c.course++; const sl=c.courses[c.course]; c.want=courseWant(sl,c.party); c.got={}; c.state='sit'; c.pat=Math.max(c.pat,c.patMax*.75); c.wait=0; c.settled=false;
       fx.push({x:c.x,y:c.y-1.3,txt:{A:'L’entrée, s’il vous plaît !',B:'Le plat, s’il vous plaît !',C:'Et le dessert ?'}[sl]||'',col:'#fff7ee',t:0}); } continue; }
     if(c.state==='eat' && c.kind==='bar'){ c.eatT-=dt; if(c.eatT<=0){ const g=served(c,1.3); save.tcash.bar=(save.tcash.bar||0)+g; stat('cocktails');
       fx.push({x:c.x,y:c.y-1,txt:'+'+fmt(g),col:'#ffc23d',t:0}); leave(c,false); } continue; }
@@ -1250,17 +1260,18 @@ function updateStations(dt){
       if(s.heat>=1){ s.heat=0; stock[s.id]=0; s.smoke=2.5; sfx('break'); shake=.3; fx.push({x:s.x,y:2.4,txt:'Brûlé !',col:'#e8466a',t:0,big:true}); }
     }
     if(s.smoke) s.smoke=Math.max(0,s.smoke-dt);
-    if(SHOP.mech==='wood' && isOven && has('mech')){ s.cart=(s.cart||0)+dt; if(s.cart>1.2){ s.cart=0; s.fuel=Math.min(18,s.fuel+1); } }
+    if(SHOP.mech==='wood' && isOven && has('mech')){ s.cart=(s.cart||0)+dt; if(s.cart>2.6){ s.cart=0; s.fuel=Math.min(18,s.fuel+1); } }
   }
-  if(SHOP.mech==='melt'){ meltT+=dt; if(meltT>(has('mech')?18:6)){ meltT=0;
+  if(SHOP.mech==='melt'){ const heat=(ev&&ev.type==='canicule'?2:1)*(unlockedProducts().reduce((a,p)=>a+counter[p],0)>12?1.6:1); meltT+=dt*heat; if(meltT>(has('mech')?14:6)){ meltT=0;
     for(const pr of unlockedProducts()) if(counter[pr]>0){ counter[pr]--; fx.push({x:dropSpot(pr).x+(Math.random()-.5)*.6,y:9.3,spr:'droplet',t:0}); } } }
   // drive : des voitures font la queue ; la première attend au guichet, les autres patientent derrière
-  if(SHOP.mech==='drive' && save.done.length>=1){
+  if(SHOP.mech==='drive' && has('mech')){
     delivT-=dt;
-    if(delivT<=0 && (deliv?1:0)+driveQ.length<4){ delivT=(9+Math.random()*9)*(guestP?.75:1);
+    const rushD=ev&&ev.type==='rushdrive';
+    if(delivT<=0 && (deliv?1:0)+driveQ.length<(rushD?6:4)){ delivT=(9+Math.random()*9)*(guestP?.75:1)*(rushD?.4:1);
       const prods=unlockedProducts().concat(availMenus()), want={}; let pay=0; const n=1+Math.floor(Math.random()*(2+Math.min(2,save.done.length/8)));
       for(let i=0;i<n;i++){ const pr=pick(prods); want[pr]=(want[pr]||0)+1; pay+=PRODUCTS[pr].price; }
-      const time=34*(has('mech')?1.5:1)*Math.sqrt(patienceMul());
+      const time=55*Math.sqrt(patienceMul())*(ev&&ev.type==='rushdrive'?.8:1);
       driveQ.push({want,got:{},time,max:time,reward:Math.round(pay*1.6),col:pick(['car','taxi','car','truck']),x:LANE_X,y:27}); sfx('pest'); }
     driveQ.forEach(c=>c.time-=dt*.4);
     const gone=driveQ.filter(c=>c.time<=0); if(gone.length){ driveQ=driveQ.filter(c=>c.time>0); gone.forEach(c=>{ addRating(1); stat('driveLost'); driveOut.push({col:c.col,x:c.x,y:c.y,fade:1}); fx.push({x:c.x+.4,y:c.y-.6,txt:'Tût !',col:'#e8466a',t:0}); }); sfx('angry'); }
@@ -1468,14 +1479,14 @@ function upgradeList(){
 }
 const UPSLOT={x:12.3,y:7.7};
 function visiblePads(){
-  const base=padList().filter(p=>!has(p.id)).slice(0,2).map(p=>({...p,cost:Math.round(p.cost*MULT)}));
+  const base=padList().filter(p=>!has(p.id)).slice(0,2).map(p=>({...p,cost:Math.round(p.cost*MULT*costMul())}));
   // pendant la construction, une case d'amélioration reste toujours disponible
   if(base.length){ if(has('cashier')||hasBar()){ const u=upgradeList()[0]; if(u) base.push({...u,...UPSLOT}); } return base; }
   const ups=upgradeList();
   const slots=[{x:2.2,y:6.3},{x:10.6,y:6.2}];
   const out=ups.slice(0,2).map((u,i)=>({...u,...slots[i]}));
   const nx=SHOPS[(save.shop+1)%SHOPS.length];
-  out.push({id:'next',kind:'next',icon:'shop',label:nx.name,cost:Math.round(12000*MULT),x:6.8,y:5.0});
+  out.push({id:'next',kind:'next',icon:'shop',label:nx.name,cost:Math.round(12000*MULT*costMul()),x:6.8,y:5.0});
   return out;
 }
 function unlock(pad){
