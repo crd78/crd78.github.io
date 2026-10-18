@@ -771,7 +771,13 @@ function findPath(from,to){
 function navTo(ent,tgt,spd,dt){
   const key=Math.round(tgt.x*4)+','+Math.round(tgt.y*4);
   ent.navT=(ent.navT||0)-dt;
+  if(ent.navKey!==key){ ent.bestD=1e9; ent.stuckT=0; }
   if(ent.navKey!==key || !ent.nav || ent.navT<=0){ ent.nav=findPath(ent,tgt); ent.navKey=key; ent.navT=1.5+Math.random(); }
+  { const dd=Math.hypot(tgt.x-ent.x,tgt.y-ent.y);
+    if(dd<(ent.bestD||1e9)-.15){ ent.bestD=dd; ent.stuckT=0; } else if(dd>.4){ ent.stuckT=(ent.stuckT||0)+dt;
+      if(ent.stuckT>2.5){ ent.stuckT=0; ent.bestD=dd; if(gridDirty) buildGrid();
+        if(!walkable(ent.x,ent.y)){ const [i,j]=nearestFree(Math.floor(clamp(ent.x,0,WW-.01)/CELL),Math.floor(clamp(ent.y,0,23.99)/CELL)); ent.x=(i+.5)*CELL; ent.y=(j+.5)*CELL; }
+        ent.nav=findPath(ent,tgt); ent.navT=1.5; } } }
   while(ent.nav.length>1 && Math.hypot(ent.nav[0].x-ent.x,ent.nav[0].y-ent.y)<.1) ent.nav.shift();
   const wp=ent.nav[0]||tgt, dx=wp.x-ent.x, dy=wp.y-ent.y, d=Math.hypot(dx,dy);
   if(d>.04){ const v=Math.min(d,spd*dt); ent.x+=dx/d*v; ent.y+=dy/d*v; ent.walk=(ent.walk||0)+dt*9; if(Math.abs(dx)>.02) ent.dir=Math.sign(dx); }
@@ -1143,6 +1149,7 @@ function update(dt){
   if(has('assembler')) asmAI(dt);
   if(hasBar()) barAI(dt);
   fireStep(dt);
+  staffList().forEach(e=>{ if(e.frozen && !customers.some(c=>c.state==='hunt'&&c.prey===e)) e.frozen=false; });
 
   const {tx,ty}=camTarget();
   if(!camReady){ camX=tx; camY=ty; camReady=true; }
@@ -1372,10 +1379,16 @@ function bakerAI(w,dt){
     else go({x:1.9+workers.indexOf(w)*.8,y:4.8});
   }
   if(w.state==='fetch'){ const d=go(pickSpot(w.target)); interact(w,dt,false);
-    if(d<.5 && (w.carry.length>=4 || stock[w.target.id]===0)) w.state = w.carry.length ? 'deliver' : 'idle'; }
+    if(d<.5 && (w.carry.length>=w.cap || stock[w.target.id]===0 || (w.t>2.5 && w.carry.length))) w.state = w.carry.length ? 'deliver' : 'idle'; }
   if(w.state==='deliver'){ const d=go(dropSpot(w.carry[0])); interact(w,dt,false);
     if(!w.carry.length) w.state='idle'; else if(d<.5 && counter[w.carry[0]]>=COUNTER_MAX) w.state='wait'; }
-  if(w.state==='wait'){ interact(w,dt,false); if(!w.carry.length) w.state='idle'; else if(counter[w.carry[0]]<COUNTER_MAX) w.state='deliver'; }
+  if(w.state==='wait'){ interact(w,dt,false); w.waitT=(w.waitT||0)+dt;
+    if(!w.carry.length){ w.state='idle'; w.waitT=0; }
+    else if(counter[w.carry[0]]<COUNTER_MAX){ w.state='deliver'; w.waitT=0; }
+    else if(w.waitT>3){ const p=w.carry[0], st=STATIONS.find(s=>unlockedStation(s)&&s.product===p&&stock[s.id]<8);
+      if(st){ w.state='putback'; w.target=st; } else { counter[p]=Math.min(COUNTER_MAX+4,counter[p]); w.carry=w.carry.filter(x=>x!==p); w.state=w.carry.length?'deliver':'idle'; } w.waitT=0; } }
+  if(w.state==='putback'){ const d=go(pickSpot(w.target));
+    if(d<.5){ while(w.carry.length && stock[w.target.id]<8){ stock[w.target.id]++; w.carry.pop(); } w.carry=[]; w.state='idle'; } }
 }
 // le serveur reste en salle : il prend au bar côté salle et contourne les tables
 function waiterAI(w,dt){
