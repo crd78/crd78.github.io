@@ -1,0 +1,28 @@
+LE FOURNIL - VERSION WEB À INSTALLER SUR L'ÉCRAN D'ACCUEIL
+
+Ce dossier est le jeu complet. Il suffit de le mettre en ligne une fois.
+
+1) METTRE EN LIGNE AVEC GITHUB PAGES (gratuit)
+   a. Sur github.com, crée un nouveau dépôt PUBLIC, par exemple « le-fournil ».
+   b. Dans le dépôt : « Add file » > « Upload files », glisse TOUS les fichiers de ce dossier
+      (index.html, sw.js, manifest.webmanifest, les icônes, confidentialite.html), puis « Commit changes ».
+   c. « Settings » > « Pages » > Source : « Deploy from a branch », branche « main », dossier « / (root) » > « Save ».
+   d. Après une ou deux minutes, le jeu est en ligne à l'adresse :
+      https://TON-PSEUDO.github.io/le-fournil/
+
+2) INSTALLER SUR IPHONE
+   Ouvre l'adresse dans SAFARI > bouton Partager > « Sur l'écran d'accueil » > Ajouter.
+   Le jeu apparaît avec son icône et s'ouvre en plein écran, même sans réseau.
+
+3) INSTALLER SUR ANDROID
+   Ouvre l'adresse dans Chrome > menu ⋮ > « Ajouter à l'écran d'accueil » (ou « Installer l'application »).
+
+METTRE À JOUR
+   Remplace les fichiers dans le dépôt GitHub par les nouveaux. Les joueurs reçoivent la mise à jour
+   la prochaine fois qu'ils ouvrent le jeu avec du réseau. Leur partie est conservée.
+
+BON À SAVOIR
+   - La partie est enregistrée dans le téléphone. Sur iPhone, le jeu installé sur l'écran d'accueil garde
+     sa sauvegarde à part de Safari ; supprimer l'icône du jeu efface la partie.
+   - Le mode « Jouer à deux » demande Internet.
+   - Avant de partager le lien largement, complète ton nom et ton e-mail dans confidentialite.html.
