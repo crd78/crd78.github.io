@@ -596,7 +596,8 @@ function resize(){
 window.addEventListener('resize',resize); resize();
 const X=u=>(u-camX)*S, Y=v=>(v-camY)*S;
 function camTarget(){
-  const tx = VW>=WW ? -(VW-WW)/2 : clamp(player.x-VW/2, 0, WW-VW);
+  const minX = SHOP.mech==='drive' ? -2.9 : 0, span = WW-minX;
+  const tx = VW>=span ? minX-(VW-span)/2 : clamp(player.x-VW/2, minX, WW-VW);
   const ty = clamp(player.y-(TOP/S)-(VH-TOP/S)*.45, -TOP/S, WH-VH);
   return {tx,ty};
 }
@@ -715,7 +716,9 @@ const speed = () => (has('shoes') ? 4.6 : 3.4) * (1 + (perk('speed')?.08:0) + (p
 let acctT=0, courierT=0;
 let customers=[], spawnT=1.5, rushT=0, fx=[], flyers=[], padFlash={};
 let streak=0, streakT=0, shownMoney=save.money, bumpT=0, shake=0;
-let deliv=null, delivT=25, meltT=0, driveQ=[];
+let deliv=null, delivT=8, meltT=0, driveQ=[], driveOut=[];
+const LANE_X=-1.1;
+const driveArrived = () => deliv && Math.abs((deliv.y===undefined?DELIV.y:deliv.y)-DELIV.y)<.3;
 let pests=[], pestT=25;
 let ev=null, evT=140, buzzT=0, bus=null;
 let loot=null, lootT=80;
@@ -1063,14 +1066,15 @@ function updateStations(dt){
       const prods=unlockedProducts().concat(has('bench')?['combo']:[]), want={}; let pay=0; const n=1+Math.floor(Math.random()*(2+Math.min(2,save.done.length/8)));
       for(let i=0;i<n;i++){ const pr=pick(prods); want[pr]=(want[pr]||0)+1; pay+=PRODUCTS[pr].price; }
       const time=34*(has('mech')?1.5:1)*Math.sqrt(patienceMul());
-      driveQ.push({want,got:{},time,max:time,reward:Math.round(pay*1.6),col:pick(['car','taxi','car','truck'])}); sfx('pest'); }
+      driveQ.push({want,got:{},time,max:time,reward:Math.round(pay*1.6),col:pick(['car','taxi','car','truck']),x:LANE_X,y:27}); sfx('pest'); }
     driveQ.forEach(c=>c.time-=dt*.4);
-    const gone=driveQ.filter(c=>c.time<=0); if(gone.length){ driveQ=driveQ.filter(c=>c.time>0); gone.forEach(()=>{ addRating(1); stat('driveLost'); }); sfx('angry'); }
+    const gone=driveQ.filter(c=>c.time<=0); if(gone.length){ driveQ=driveQ.filter(c=>c.time>0); gone.forEach(c=>{ addRating(1); stat('driveLost'); driveOut.push({col:c.col,x:c.x,y:c.y,fade:1}); fx.push({x:c.x+.4,y:c.y-.6,txt:'Tût !',col:'#e8466a',t:0}); }); sfx('angry'); }
     if(!deliv && driveQ.length){ deliv=driveQ.shift(); }
+    moveDrive(dt);
     if(deliv){ deliv.time-=dt;
       // l'équipier du drive prend au comptoir ce que la voiture attend
-      if(has('courier')){ courierT+=dt; if(courierT>.9){ courierT=0; const p=Object.keys(deliv.want).find(k=>(deliv.got[k]||0)<deliv.want[k] && counter[k]>0); if(p){ counter[p]--; flyers.push({type:p,x:dropSpot(p).x,y:8.6,tx:DELIV.x,ty:DELIV.y,t:0}); delivGive(p); } } }
-      if(deliv && deliv.time<=0){ deliv=null; addRating(1); stat('driveLost'); sfx('angry'); fx.push({x:DELIV.x+.9,y:DELIV.y-.8,txt:'Tût tût ! Elle repart…',col:'#e8466a',t:0,big:true}); } }
+      if(has('courier') && driveArrived()){ courierT+=dt; if(courierT>.9){ courierT=0; const p=Object.keys(deliv.want).find(k=>(deliv.got[k]||0)<deliv.want[k] && counter[k]>0); if(p){ counter[p]--; flyers.push({type:p,x:dropSpot(p).x,y:8.6,tx:DELIV.x,ty:DELIV.y,t:0}); delivGive(p); } } }
+      if(deliv && deliv.time<=0){ driveOut.push({col:deliv.col,x:deliv.x,y:deliv.y,vy:-7}); deliv=null; addRating(1); stat('driveLost'); sfx('angry'); fx.push({x:DELIV.x+.9,y:DELIV.y-.8,txt:'Tût tût ! Elle repart…',col:'#e8466a',t:0,big:true}); } }
   }
 }
 
@@ -1087,7 +1091,7 @@ function interact(ent,dt,isPlayer){
       const i=ent.carry.indexOf('wood');
       if(i>=0 && dist(ent,pickSpot(s))<.9 && s.fuel<=12 && ent.t>.12){ ent.carry.splice(i,1); s.fuel+=6; ent.t=0; sfx('drop'); fx.push({x:s.x,y:2.4,txt:'+6',col:'#ff8a3d',t:0}); } }
   }
-  if(deliv && dist(ent,DELIV)<.9 && ent.t>.1){
+  if(deliv && driveArrived() && dist(ent,DELIV)<.9 && ent.t>.1){
     const need=Object.keys(deliv.want).find(pr=>(deliv.got[pr]||0)<deliv.want[pr] && ent.carry.includes(pr));
     if(need){ ent.carry.splice(ent.carry.lastIndexOf(need),1); ent.t=0; delivGive(need); }
   }
@@ -1112,13 +1116,21 @@ function interact(ent,dt,isPlayer){
       if(p){ ent.carry.splice(ent.carry.lastIndexOf(p),1); giveTable(c,p); ent.t=0; } } }
   dropCounter(ent,true);
 }
+// les voitures roulent jusqu'à leur place dans la file, puis repartent par le haut
+function moveDrive(dt){
+  const go=(c,ty)=>{ if(c.y===undefined){ c.y=ty; return; } const d=ty-c.y; c.y+=Math.sign(d)*Math.min(Math.abs(d),6.5*dt); };
+  if(deliv) go(deliv,DELIV.y);
+  driveQ.forEach((c,i)=>go(c,DELIV.y+1.6*(i+1)));
+  driveOut.forEach(c=>{ if(c.fade!==undefined) c.fade-=dt*1.6; else c.y+=c.vy*dt; });
+  driveOut=driveOut.filter(c=>c.fade===undefined ? c.y>-6 : c.fade>0);
+}
 function delivGive(p){
   deliv.got[p]=(deliv.got[p]||0)+1; sfx('drop');
   if(Object.keys(deliv.want).every(pr=>(deliv.got[pr]||0)>=deliv.want[pr])){
     const r=Math.round(deliv.reward*(1+.6*Math.max(0,deliv.time)/deliv.max))*(rushT>0?2:1); save.money+=r; stat('earned',r); stat('deliv'); sfx('cash'); gainXP(2); addRating(deliv.time/deliv.max>.4?5:4);
     fx.push({x:DELIV.x+.6,y:DELIV.y-.6,txt:'+'+fmt(r),col:'#ffc23d',t:0,big:true});
     for(let i=0;i<10;i++) fx.push({x:DELIV.x+(Math.random()-.5),y:DELIV.y-.5+(Math.random()-.5),spr:'coin',t:-Math.random()*.3});
-    deliv=null; }
+    driveOut.push({col:deliv.col,x:deliv.x,y:deliv.y,vy:-7}); deliv=null; }
 }
 function dropCounter(ent,isPlayer){
   for(const p of saleProducts()){
@@ -1276,7 +1288,7 @@ function prestige(){
   buildShop(); resetCounter(); gridDirty=true;
   STATIONS.forEach(st=>{ stock[st.id]=0; st.t=0; st.broken=false; st.fix=0; st.heat=0; st.smoke=0; st.fuel=undefined; });
   TABLES.forEach(t=>{ t.busy=null; t.dirty=false; t.cleanP=0; });
-  workers.length=0; waiters.length=0; asm.carry=[]; asm.state='idle'; customers=[]; pests=[]; loot=null; deliv=null; driveQ=[]; delivT=25; meltT=0; bench.a=bench.b=bench.t=bench.out=0; ev=null; bus=null; evT=140;
+  workers.length=0; waiters.length=0; asm.carry=[]; asm.state='idle'; customers=[]; pests=[]; loot=null; deliv=null; driveQ=[]; driveOut=[]; delivT=8; meltT=0; bench.a=bench.b=bench.t=bench.out=0; ev=null; bus=null; evT=140;
   player.carry=[]; if(guestP){ guestP.carry=[]; } player.x=3; player.y=5.6; streak=0; streakT=0; shownMoney=0;
   persist(); sfx('unlock');
   openModal(`<span class="eyebrow">Nouvelle boutique · ${save.stars} ★</span><h2>Bienvenue à ${SHOP.name}</h2>
@@ -1690,21 +1702,30 @@ function drawCounter(){
     ctx.fillStyle='#2a1c14'; ctx.font=`800 ${S*.28}px "Nunito",sans-serif`; ctx.fillText('Bois',X(WOOD.x),Y(WOOD.y+.75));
   }
   if(SHOP.mech==='drive'){
-    // le guichet du drive dans le mur de gauche, et la voiture qui attend derrière la vitre
-    ctx.fillStyle='#2a1c14'; rr(X(.05),Y(DELIV.y-.75),S*.55,S*1.5,S*.1); ctx.fill();
-    ctx.fillStyle='rgba(170,220,245,.9)'; rr(X(.12),Y(DELIV.y-.62),S*.4,S*1.24,S*.08); ctx.fill();
+    // la voie du drive longe le mur de gauche, depuis la rue jusqu'en haut
+    ctx.fillStyle='#7fbf6a'; ctx.fillRect(X(-3.4),Y(-5),S*.8,S*25.3);
+    ctx.fillStyle='#3d424e'; ctx.fillRect(X(-2.6),Y(-5),S*2.45,S*25.3); ctx.fillRect(X(-2.3),Y(20.3),S*2.0,S*3.0);
+    ctx.fillStyle='#d9d2c6'; ctx.fillRect(X(-.15),Y(-5),S*.45,S*25.3);
+    ctx.fillStyle='rgba(255,255,255,.55)';
+    for(let y=-3;y<20;y+=3.2){ const ax=X(LANE_X), ay=Y(y); ctx.beginPath(); ctx.moveTo(ax,ay-S*.45); ctx.lineTo(ax-S*.3,ay); ctx.lineTo(ax-S*.1,ay); ctx.lineTo(ax-S*.1,ay+S*.45); ctx.lineTo(ax+S*.1,ay+S*.45); ctx.lineTo(ax+S*.1,ay); ctx.lineTo(ax+S*.3,ay); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle='#ffc23d'; rr(X(-2.45),Y(18.6),S*2.1,S*.5,S*.12); ctx.fill(); ctx.fillStyle='#2a1c14'; ctx.font=`800 ${S*.3}px "Baloo 2",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('DRIVE',X(-1.4),Y(18.86));
+    if(has('mech')){ ctx.fillStyle='#2a1c14'; ctx.fillRect(X(-2.2)-2,Y(12.2),4,S*.9); rr(X(-2.55),Y(10.9),S*.72,S*1.3,S*.1); ctx.fill(); ctx.fillStyle='#c0392b'; rr(X(-2.5),Y(10.96),S*.62,S*1.18,S*.08); ctx.fill(); img('burger',X(-2.19),Y(11.3),S*.4); img('fries',X(-2.19),Y(11.75),S*.36); }
+    // le guichet dans le mur
+    ctx.fillStyle='#2a1c14'; rr(X(.02),Y(DELIV.y-.75),S*.4,S*1.5,S*.1); ctx.fill();
+    ctx.fillStyle='rgba(170,220,245,.95)'; rr(X(.08),Y(DELIV.y-.62),S*.28,S*1.24,S*.08); ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=2; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.ellipse(X(DELIV.x+.15),Y(DELIV.y+.35),S*.5,S*.22,0,0,7); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle='#ffc23d'; rr(X(.12),Y(DELIV.y+.82),S*.9,S*.32,S*.16); ctx.fill(); ctx.fillStyle='#2a1c14'; ctx.font=`800 ${S*.2}px "Nunito",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('DRIVE',X(.57),Y(DELIV.y+.98));
-    if(deliv){
-      ctx.save(); ctx.translate(X(.3),Y(DELIV.y)); ctx.scale(-1,1); img(deliv.col||'car',0,0,S*.9); ctx.restore();
+    const car=(c,alpha)=>{ if(c.y===undefined) return; ctx.save(); ctx.globalAlpha=alpha; ctx.translate(X(c.x===undefined?LANE_X:c.x),Y(c.y));
+      ctx.fillStyle='rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(S*.12,0,S*.35,S*.62,0,0,7); ctx.fill();
+      ctx.rotate(Math.PI/2); img(c.col||'car',0,0,S*1.25); ctx.restore(); };
+    driveQ.forEach(c=>{ car(c,1); if(c.time/c.max<.3) img('angry',X(LANE_X+.55),Y(c.y-.35),S*.38); });
+    if(deliv) car(deliv,1);
+    driveOut.forEach(c=>car(c,c.fade===undefined?1:Math.max(0,c.fade)));
+    if(deliv && driveArrived()){
       const items=Object.keys(deliv.want).filter(pr=>(deliv.got[pr]||0)<deliv.want[pr]);
       bubble(items,deliv.want,deliv.got,X(DELIV.x+.35),Y(DELIV.y)-S*.75,Math.max(0,deliv.time)/deliv.max);
     }
-    const wait=driveQ.length;
-    if(wait){ const x=X(DELIV.x+.35), y=Y(DELIV.y)+S*.5; ctx.fillStyle='rgba(42,28,20,.8)'; rr(x,y,S*(.5+wait*.42),S*.42,S*.21); ctx.fill();
-      for(let i=0;i<wait;i++) img('car',x+S*(.3+i*.42),y+S*.21,S*.36);
-      ctx.fillStyle='#fff'; ctx.font=`800 ${S*.22}px "Nunito",sans-serif`; ctx.textAlign='left'; ctx.fillText('en attente',x+S*(.5+wait*.42)+4,y+S*.22); }
   }
+
 
 }
 
@@ -2784,7 +2805,7 @@ function snapState(){
     np:{tech:P(tech),asm:P(asm).concat([asm.carry]),hcat:P(hcat),cat:P(cat)},
     sta:STATIONS.map(st=>[stock[st.id],r2(st.t),st.broken?1:0,r2(st.fix||0),r2(st.heat||0),r2(st.smoke||0),st.fuel===undefined?-1:st.fuel,st.tapped?1:0]),
     co:counter, be:[bench.a,bench.b,r2(bench.t),bench.out], tb:TABLES.map(t=>[t.dirty?1:0,r2(t.cleanP||0)]),
-    dv:deliv, dq:driveQ, lo:loot, ev:ev?{type:ev.type,t:r2(ev.t),max:ev.max}:null, bus:bus?{x:r2(bus.x),t:r2(bus.t)}:null,
+    dv:deliv, dq:driveQ, do:driveOut, lo:loot, ev:ev?{type:ev.type,t:r2(ev.t),max:ev.max}:null, bus:bus?{x:r2(bus.x),t:r2(bus.t)}:null,
     ct:contest?{t:r2(contest.t),n:contest.n,goals:contest.goals}:null,
     fx:fx.slice(-40), fl:flyers.slice(-30), pf:padFlash,
     snd:sndQ.splice(0), xp:(()=>{ const n=netXP; netXP=0; return n; })(), to:netToasts.splice(0),
@@ -2871,7 +2892,7 @@ function guestApply(m){
   const np=(o,a)=>{ o.tx=a[0]; o.ty=a[1]; o.dir=a[3]; };
   np(tech,m.np.tech); np(asm,m.np.asm); asm.carry=m.np.asm[4]; np(hcat,m.np.hcat); np(cat,m.np.cat);
   [bench.a,bench.b,bench.t,bench.out]=m.be;
-  deliv=m.dv; driveQ=m.dq||[]; loot=m.lo; ev=m.ev; bus=m.bus; contest=m.ct;
+  deliv=m.dv; driveQ=m.dq||[]; driveOut=m.do||[]; loot=m.lo; ev=m.ev; bus=m.bus; contest=m.ct;
   fx=m.fx; flyers=m.fl; Object.assign(padFlash,m.pf);
   partner.tx=m.h.x; partner.ty=m.h.y; partner.carry=m.h.c; partner.o=m.h.o; partner.hat=m.h.hat;
   player.carry=m.g||[];
