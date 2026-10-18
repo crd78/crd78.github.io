@@ -360,9 +360,11 @@ const LOCKER = {x:.95, y:6.45};   // le casier des tenues (plus haut au fast-foo
 const CITYPAD = {x:7, y:22.95};
 const DROPX = {A:3.0, B:8.4, C:11.6, X:7.1};   // X : formules
 const BENCH = {x:4.0, y:6.8};                  // plan de travail
+const BENCH2 = {x:8.6, y:7.2};                 // 2e plan de travail
 const SLOTS = [];                              // la file d'attente (recalculée selon la caisse de la boutique)
 // coin bar du restaurant gastronomique (côté droit de la salle)
 const BAR = {x:12.2, y:13.3, pick:{x:12.15,y:15.75}, stools:[{x:11.1,y:12.0},{x:11.1,y:13.2},{x:11.1,y:14.4}]};
+const unCombo=()=>{ const n=COMBO_NAMES[save.shop%SHOPS.length][0]; return (/^(Formule|Coupe)/.test(n)?'une ':'un ')+n.toLowerCase(); };
 const COMBO_NAMES=[['Formule','formules'],['Menu','menus'],['Menu dégustation','menus dégustation'],['Coupe duo','coupes duo'],['Menu pizza','menus pizza']];
 const REGULARS=[{id:'rose',name:'Mme Rose',face:'oldw_light'},{id:'momo',name:'Momo',face:'boy_medium'},{id:'jules',name:'Jules',face:'beard_light'},{id:'aya',name:'Aya',face:'curly_dark'},{id:'leon',name:'Léon',face:'oldm_dark'},{id:'lina',name:'Lina',face:'girl_light'}];
 const WALK_Y = 22.85;
@@ -398,15 +400,15 @@ const SHOPS = [
    st : position des postes au mur du fond · drop : où l'on pose chaque famille au comptoir · reg : la caisse
    gap : passage cuisine ↔ salle (L à gauche, R à droite) · tables : la salle · shape : style des tables */
 const LAYOUTS = [
-  {st:{a1:1.4,a2:3.0,a3:4.6,b1:7.6,b2:9.2,c1:11.0,c2:12.6}, drop:{A:3.0,B:8.4,C:11.6,X:7.1}, reg:5.8, cash:[6.9,7.3], gap:'R', bench:[4.0,6.8],
+  {st:{a1:1.4,a2:3.0,a3:4.6,b1:7.6,b2:9.2,c1:11.0,c2:12.6}, drop:{A:3.0,B:8.4,C:11.6,X:7.1}, reg:5.8, cash:[6.9,7.3], gap:'R', bench:[4.0,6.8], bench2:[8.6,7.2],
    tables:{t1:[2.2,13.0],t2:[9.8,13.0],t3:[12.2,13.0],t4:[2.2,16.6],t5:[9.8,16.6],t6:[12.2,16.6]}, shape:'bistro', pads:{}},
-  {st:{a1:1.4,a2:2.9,a3:4.4,c1:6.6,c2:8.1,b1:10.8,b2:12.4}, drop:{A:2.4,X:4.4,C:8.6,B:10.8}, reg:6.4, cash:[7.9,7.4], gap:'R', bench:[6.4,6.9],
+  {st:{a1:1.4,a2:2.9,a3:4.4,c1:6.6,c2:8.1,b1:10.8,b2:12.4}, drop:{A:2.4,X:4.4,C:8.6,B:10.8}, reg:6.4, cash:[7.9,7.4], gap:'R', bench:[6.4,6.9], bench2:[3.4,6.9],
    tables:{t1:[2.0,12.4],t2:[11.9,12.4],t3:[2.0,15.0],t4:[11.9,15.0],t5:[2.0,17.6],t6:[11.9,17.6]}, shape:'booth', pads:{decor:[9.3,11.2]}},
-  {st:{a1:1.4,a2:2.9,a3:4.4,b1:6.4,b2:7.9,c1:10.8,c2:12.4}, drop:{A:3.6,B:7.2,C:11.6,X:9.4}, reg:9.4, cash:[8.8,7.3], gap:'L', bench:[9.4,6.9],
+  {st:{a1:1.4,a2:2.9,a3:4.4,b1:6.4,b2:7.9,c1:10.8,c2:12.4}, drop:{A:3.6,B:7.2,C:11.6,X:9.4}, reg:9.4, cash:[8.8,7.3], gap:'L', bench:[9.4,6.9], bench2:[3.0,7.0],
    tables:{t1:[2.4,12.3],t2:[5.8,12.3],t3:[2.4,15.9],t4:[5.8,15.9],t5:[8.9,14.1],t6:[8.9,17.8]}, shape:'gastro', pads:{decor:[4.1,10.9]}},
-  {st:{a1:1.4,a2:2.9,a3:4.4,b1:7.0,b2:8.5,c1:10.9,c2:12.4}, drop:{A:2.9,X:4.9,B:7.9,C:11.6}, reg:6.4, cash:[7.5,7.3], gap:'R', bench:[4.2,6.9],
+  {st:{a1:1.4,a2:2.9,a3:4.4,b1:7.0,b2:8.5,c1:10.9,c2:12.4}, drop:{A:2.9,X:4.9,B:7.9,C:11.6}, reg:6.4, cash:[7.5,7.3], gap:'R', bench:[4.2,6.9], bench2:[9.6,7.1],
    tables:{t1:[2.0,12.2],t2:[12.0,12.2],t3:[2.0,15.0],t4:[12.0,15.0],t5:[2.4,17.9],t6:[11.6,17.9]}, shape:'pastel', pads:{decor:[4.4,11.4]}},
-  {st:{b1:1.4,b2:2.9,a1:5.2,a2:6.8,a3:8.4,c1:10.9,c2:12.4}, drop:{B:2.8,A:6.8,X:8.6,C:11.6}, reg:4.6, cash:[3.4,7.3], gap:'L', bench:[6.0,6.9],
+  {st:{b1:1.4,b2:2.9,a1:5.2,a2:6.8,a3:8.4,c1:10.9,c2:12.4}, drop:{B:2.8,A:6.8,X:8.6,C:11.6}, reg:4.6, cash:[3.4,7.3], gap:'L', bench:[6.0,6.9], bench2:[9.6,7.1],
    tables:{t1:[7.4,12.6],t2:[10.4,12.6],t3:[7.4,15.6],t4:[10.4,15.6],t5:[1.9,12.6],t6:[10.4,18.4]}, shape:'checker', pads:{decor:[3.0,11.0]}},
 ];
 /* thème visuel : sols de cuisine et de salle, comptoir, postes */
@@ -439,7 +441,7 @@ const TABLES = [
   {id:'t4',x:2.2,y:16.6},{id:'t5',x:9.8,y:16.6},{id:'t6',x:12.2,y:16.6},
   {id:'o1',x:1.9,y:21.75,out:true},{id:'o2',x:4.3,y:21.75,out:true},{id:'o3',x:9.7,y:21.75,out:true},{id:'o4',x:12.1,y:21.75,out:true},
 ];
-const PADICON = {accountant:'bag',tech:'wrench',timer:'stopwatch',shopcat:'wcat',assembler:'plate',courier:'scooter',bench:'plate',bar:'cocktail',waiter2:'wcook_dark',baker:'wcook_light',bag:'bag',cashier:'wcook_medium',shoes:'shoe',waiter:'mcook_medium',baker2:'cook_dark',sign:'star',music:'radio',decor:'frame'};
+const PADICON = {accountant:'bag',tech:'wrench',timer:'stopwatch',shopcat:'wcat',assembler:'plate',courier:'scooter',bench:'plate',bench2:'plate',bar:'cocktail',waiter2:'wcook_dark',baker:'wcook_light',bag:'bag',cashier:'wcook_medium',shoes:'shoe',waiter:'mcook_medium',baker2:'cook_dark',sign:'star',music:'radio',decor:'frame'};
 TABLES.forEach(t => PADICON[t.id] = t.out ? 'umbrella' : 'chair');
 const PADS = [
   {id:'a2',     cost:40,   x:3.0, y:2.6},
@@ -461,6 +463,7 @@ const PADS = [
   {id:'baker2', cost:650,  x:2.2, y:6.3},
   {id:'b2',     cost:950,  x:9.2, y:2.6},
   {id:'t4',     cost:750,  x:2.2, y:16.6, label:'Table 4'},
+  {id:'bench2', cost:900,  x:8.6, y:7.2, label:'2e plan de travail'},
   {id:'decor',  cost:1100, x:3.6, y:11.4, label:'Déco cosy'},
   {id:'c2',     cost:1500, x:12.6,y:2.6},
   {id:'t5',     cost:1000, x:9.8, y:16.6, label:'Table 5'},
@@ -478,7 +481,7 @@ const PADS = [
   {id:'courier',cost:4600, x:10.6,y:6.2, label:'Livreur'},
   {id:'sign',   cost:5500, x:6.8, y:5.0, label:'Enseigne dorée'},
 ];
-const GASTRO_OFF = ['bench','assembler','cashier','t1','t2','t3'];   // au resto chic : pas de caisse ni de formules, 3 tables offertes
+const GASTRO_OFF = ['bench','bench2','assembler','cashier','t1','t2','t3'];   // au resto chic : pas de caisse ni de formules, 3 tables offertes
 const padList = () => PADS.filter(p => (p.id!=='mech' || SHOP.extra) && (p.id!=='courier' || SHOP.mech==='drive') && (p.id!=='bar' || SHOP.mech==='gastro') && !(SHOP.mech==='gastro' && GASTRO_OFF.includes(p.id)));
 
 /* ================= sauvegarde ================= */
@@ -499,7 +502,7 @@ const SEASON=(()=>{ const d=new Date(), m=d.getMonth()+1, day=d.getDate();
   return null; })();
 if(SEASON && save.seasonId!==SEASON.id){ save.seasonId=SEASON.id; save.candy=0; }
 // au resto chic, pas de caisse ni de plan des formules (même si la sauvegarde les contient)
-const has = id => save.done.includes(id) && !(SHOP.mech==='gastro' && (id==='bench'||id==='assembler'||id==='cashier'));
+const has = id => save.done.includes(id) && !(SHOP.mech==='gastro' && (id==='bench'||id==='bench2'||id==='assembler'||id==='cashier'));
 /* niveau du chef : l'expérience se garde d'une boutique à l'autre et débloque des bonus permanents */
 save.lvl=save.lvl||1; save.xp=save.xp||0; save.sold=save.sold||{};
 const xpNeed = l => 25 + 15*l;
@@ -555,14 +558,15 @@ function applyLayout(){
   for(const k in DROPX) delete DROPX[k]; Object.assign(DROPX,L.drop);
   REG.x=L.reg; CASH.x=L.cash[0]; CASH.y=L.cash[1];
   COUNTER.x = L.gap==='L' ? 1.8 : .3;
-  BENCH.x=L.bench[0]; BENCH.y=L.bench[1];
+  BENCH.x=L.bench[0]; BENCH.y=L.bench[1]; BENCH2.x=L.bench2[0]; BENCH2.y=L.bench2[1];
   TABLES.forEach(t=>{ const p=L.tables[t.id]; if(p){ t.x=p[0]; t.y=p[1]; } t.shape=t.out?'terrace':L.shape; });
   PADS.forEach(pd=>{
     if(!pd.home) pd.home=[pd.x,pd.y];
     [pd.x,pd.y]=L.pads[pd.id]||pd.home;
     const st=STATIONS.find(s=>s.id===pd.id); if(st) pd.x=st.x;
     const t=TABLES.find(t=>t.id===pd.id); if(t){ pd.x=t.x; pd.y=t.y; }
-    if(pd.id==='bench'){ pd.x=BENCH.x; pd.y=BENCH.y; } });
+    if(pd.id==='bench'){ pd.x=BENCH.x; pd.y=BENCH.y; }
+    if(pd.id==='bench2'){ pd.x=BENCH2.x; pd.y=BENCH2.y; } });
   SLOTS.length=0;
   for(let i=0;i<9;i++) SLOTS.push({x:REG.x,y:10.5+i});
   for(let i=0;i<5;i++) SLOTS.push({x:REG.x-1.3,y:18.5-i});
@@ -693,7 +697,7 @@ function solidsList(){
   const r=[COUNTER,{x:.3,y:19.8,w:5.7,h:.5},{x:8,y:19.8,w:5.7,h:.5}];
   STATIONS.forEach(s=>{ if(unlockedStation(s)) r.push({x:s.x-.7,y:1.5,w:1.4,h:1.5}); });
   openTables().forEach(t=>r.push({x:t.x-.6,y:t.y-.3,w:1.2,h:.6}));
-  if(has('bench')) r.push({x:BENCH.x-.6,y:BENCH.y-.3,w:1.2,h:.6});
+  benchesOn().forEach(b=>r.push({x:b.x-.6,y:b.y-.3,w:1.2,h:.6}));
   if(hasBar()) r.push({x:11.75,y:11.3,w:1.95,h:3.95});
   return r;
 }
@@ -779,7 +783,7 @@ const unlockedStation = s => s.id==='a1' || has(s.id);
 const unlockedProducts = () => [...new Set(STATIONS.filter(unlockedStation).map(s=>s.product))];
 const isMenu = p => !!(PRODUCTS[p] && PRODUCTS[p].pair);
 // un menu est possible dès que ses deux produits sont débloqués
-const availMenus = () => has('bench') ? ['mAB','mAC','mBC'].filter(m=>PRODUCTS[m] && PRODUCTS[m].pair.every(k=>unlockedProducts().includes(k))) : [];
+const availMenus = () => benchesOn().length ? ['mAB','mAC','mBC'].filter(m=>PRODUCTS[m] && PRODUCTS[m].pair.every(k=>unlockedProducts().includes(k))) : [];
 const hasBar = () => SHOP.mech==='gastro' && has('bar');
 const saleProducts = () => [...unlockedProducts(), ...availMenus(), ...(hasBar()?['cocktail']:[])];
 // le bar : 3 tabourets, un barman qui prépare les cocktails et sert lui-même les clients assis au comptoir
@@ -787,14 +791,20 @@ const bar = {stools:[null,null,null], t:0, serveT:0, by:13.3, shake:0};
 const freeStools = () => hasBar() ? [0,1,2].filter(i=>!bar.stools[i]) : [];
 const menuStock = () => availMenus().reduce((a,m)=>a+(counter[m]||0),0);
 // plan de travail : une file de menus à préparer (ingrédients déjà posés) et les menus prêts
-const bench = {jobs:[],t:0,out:[]};
-function benchMake(ent,m){
-  const P=PRODUCTS[m]; if(!P || !availMenus().includes(m) || bench.jobs.length>=3) return false;
+const BENCHES = [{id:'bench',pos:BENCH,jobs:[],t:0,out:[]},{id:'bench2',pos:BENCH2,jobs:[],t:0,out:[]}];
+BENCHES.forEach(b=>{ Object.defineProperty(b,'x',{get:()=>b.pos.x}); Object.defineProperty(b,'y',{get:()=>b.pos.y}); });
+const bench = BENCHES[0];
+const benchesOn = () => BENCHES.filter(b=>has(b.id));
+const nearBench = (ent,r) => benchesOn().filter(b=>dist(ent,b)<r).sort((a,b)=>dist(ent,a)-dist(ent,b))[0]||null;
+const benchOut = () => BENCHES.reduce((a,b)=>a+b.out.length,0);
+function benchMake(ent,m,b){
+  b=b||nearBench(ent,1.6)||benchesOn()[0];
+  const P=PRODUCTS[m]; if(!b || !P || !availMenus().includes(m) || b.jobs.length>=3) return false;
   if(!P.pair.every(k=>ent.carry.includes(k))) return false;
   P.pair.forEach(k=>ent.carry.splice(ent.carry.lastIndexOf(k),1));
-  bench.jobs.push(m); sfx('drop'); return true;
+  b.jobs.push(m); sfx('drop'); return true;
 }
-function chooseMenu(m){ if(guestView){ netSend({t:'menu',m}); return; } benchMake(player,m); }
+function chooseMenu(m){ if(guestView){ netSend({t:'menu',m}); return; } benchMake(player,m,nearBench(player,1.3)); }
 save.loyal = save.loyal || {};
 // plat du jour : un produit change chaque jour, il se vend plus cher et attire plus de monde
 function special(){ const pr=unlockedProducts(); let h=save.shop*7; for(const c of today) h=(h*31+c.charCodeAt(0))>>>0; return pr[h%pr.length]; }
@@ -897,7 +907,7 @@ function newCustomer(kind,opts={}){
   if(isGastro() && kind==='table'){ courses=(hasBar()&&Math.random()<.5?['K']:[]).concat(['A','B','C'].filter(sl=>prods.some(p=>PRODUCTS[p].slot===sl))); Object.assign(want,courseWant(courses[0],party)); }
   else if(kind==='bar') want.cocktail=1+(Math.random()<.3?1:0);
   else for(let i=0;i<n;i++){ let r=Math.random()*tot, k=0; while(k<prods.length-1 && (r-=wts[k])>0) k++; want[prods[k]]=(want[prods[k]]||0)+1; }
-  if(!courses && kind!=='bar' && availMenus().length && Math.random()<(menuStock()+bench.out.length>0 || has('assembler') ? .3 : .05)){ want[pick(availMenus())]=1+(Math.random()<.25?1:0); }
+  if(!courses && kind!=='bar' && availMenus().length && Math.random()<(menuStock()+benchOut()>0 || has('assembler') ? .3 : .05)){ want[pick(availMenus())]=1+(Math.random()<.25?1:0); }
   if(reg && !courses && kind!=='bar'){ let h=0; for(const ch of reg.id) h+=ch.charCodeAt(0); const fav=prods[h%prods.length]; want[fav]=(want[fav]||0)+1; }
   if(vip) sfx('vip');
   const side=Math.random()<.5, hue=Math.floor(Math.random()*360);
@@ -1186,7 +1196,7 @@ function update(dt){
       fx.push({x:loot.x,y:loot.y-.9,txt,col:'#ffc23d',t:0,big:true});
       for(let i=0;i<8;i++) fx.push({x:loot.x+(Math.random()-.5),y:loot.y-.4+(Math.random()-.5)*.6,spr:'sparkles',t:-Math.random()*.3});
       loot=null; } }
-  if(has('bench') && bench.jobs.length && bench.out.length<6){ bench.t+=dt; if(bench.t>=2.2){ bench.t=0; bench.out.push(bench.jobs.shift()); sfx('clean'); fx.push({x:BENCH.x,y:BENCH.y-.6,spr:'sparkles',t:0}); } }
+  for(const b of benchesOn()) if(b.jobs.length && b.out.length<6){ b.t+=dt; if(b.t>=2.2){ b.t=0; b.out.push(b.jobs.shift()); sfx('clean'); fx.push({x:b.x,y:b.y-.6,spr:'sparkles',t:0}); } }
   updatePests(dt);
   fx.forEach(f=>f.t+=dt); fx=fx.filter(f=>f.t<1);
   flyers.forEach(f=>f.t+=dt*2.6); flyers=flyers.filter(f=>f.t<1);
@@ -1271,8 +1281,9 @@ function interact(ent,dt,isPlayer){
     if(need){ ent.carry.splice(ent.carry.lastIndexOf(need),1); ent.t=0; delivGive(need); }
   }
   // plan de travail : on y pose un produit A et un produit B, il en sort une formule
-  if(has('bench') && dist(ent,BENCH)<1.1 && ent.t>.12){
-    if(bench.out.length && ent.carry.length<cap()){ ent.carry.push(bench.out.shift()); ent.t=0; sfx('pick'); }
+  const nb=nearBench(ent,1.1);
+  if(nb && ent.t>.12){
+    if(nb.out.length && ent.carry.length<cap()){ ent.carry.push(nb.out.shift()); ent.t=0; sfx('pick'); }
   }
   // côté salle : prendre au bar ce que les tables attendent
   if(ent.y>9.9 && ent.carry.length<cap() && ent.t>.15){
@@ -1411,25 +1422,29 @@ function srcOf(p){
   return counter[p]>0 ? {at:dropSpot(p)} : null;
 }
 function asmAI(dt){
-  if(!has('bench')) return;
-  const go=t=>navTo(asm,t,2.5*boostMul('staff')*uf('asm','spd'),dt), at={x:BENCH.x,y:BENCH.y+.75};
+  const on=benchesOn(); if(!on.length) return;
+  let B=on.includes(BENCHES[asm.bi||0])?BENCHES[asm.bi||0]:on[0];
+  const go=t=>navTo(asm,t,2.5*boostMul('staff')*uf('asm','spd'),dt), at={x:B.x,y:B.y+.75};
   asm.t+=dt;
   if(asm.state==='idle'){
+    // il récupère au plan le plus rempli, et prépare sur le moins chargé
+    const full=on.filter(b=>b.out.length).sort((a,b)=>b.out.length-a.out.length)[0], free=[...on].sort((a,b)=>a.jobs.length-b.jobs.length)[0];
+    B = full && menuStock()<COUNTER_MAX-2 ? full : free; asm.bi=BENCHES.indexOf(B);
     const menus=availMenus().filter(m=>PRODUCTS[m].pair.every(k=>srcOf(k)));
     // le menu que les clients réclament le plus, sinon celui qui manque au comptoir
     const want=m=>customers.reduce((a,c)=>a+Math.max(0,(c.want[m]||0)-(c.got[m]||0)),0)+(deliv&&deliv.want[m]||0)-(counter[m]||0);
-    if(bench.out.length && menuStock()<COUNTER_MAX-2) asm.state='takeCombo';
-    else if(bench.jobs.length<2 && menus.length){ menus.sort((a,b)=>want(b)-want(a)||(counter[a]||0)-(counter[b]||0)); asm.recipe=menus[0]; asm.need=[...PRODUCTS[asm.recipe].pair]; asm.state='fetch'; }
-    else go(at);
+    if(B.out.length && menuStock()<COUNTER_MAX-2) asm.state='takeCombo';
+    else if(B.jobs.length<2 && menus.length){ menus.sort((a,b)=>want(b)-want(a)||(counter[a]||0)-(counter[b]||0)); asm.recipe=menus[0]; asm.need=[...PRODUCTS[asm.recipe].pair]; asm.state='fetch'; }
+    else go({x:B.x,y:B.y+.75});
   }
   if(asm.state==='fetch'){
     const k=asm.need.find(x=>!asm.carry.includes(x)||asm.carry.filter(y=>y===x).length<asm.need.filter(y=>y===x).length);
-    if(!k){ if(go(at)<.5 && asm.t>.2){ if(!benchMake(asm,asm.recipe)){ asm.carry=[]; } asm.t=0; asm.state='idle'; } }
+    if(!k){ if(go(at)<.5 && asm.t>.2){ if(!benchMake(asm,asm.recipe,B)){ asm.carry=[]; } asm.t=0; asm.state='idle'; } }
     else { const src=srcOf(k); if(!src){ asm.carry.forEach(p=>{ counter[p]=Math.min(COUNTER_MAX,(counter[p]||0)+1); }); asm.carry=[]; asm.state='idle'; }
       else if(go(src.at)<.5 && asm.t>.2){ if(src.s) stock[src.s.id]--; else counter[k]--; asm.carry.push(k); asm.t=0; } }
   }
   if(asm.state==='takeCombo'){
-    if(!asm.carry.length){ if(go(at)<.5 && asm.t>.2){ const n=Math.min(bench.out.length,3); for(let i=0;i<n;i++) asm.carry.push(bench.out.shift()); asm.t=0; if(!n) asm.state='idle'; } }
+    if(!asm.carry.length){ if(go(at)<.5 && asm.t>.2){ const n=Math.min(B.out.length,3); for(let i=0;i<n;i++) asm.carry.push(B.out.shift()); asm.t=0; if(!n) asm.state='idle'; } }
     else if(go(dropSpot(asm.carry[0]))<.5 && asm.t>.15){ const m=asm.carry[asm.carry.length-1]; if(menuStock()<COUNTER_MAX){ counter[m]=(counter[m]||0)+1; asm.carry.pop(); asm.t=0; } if(!asm.carry.length) asm.state='idle'; } }
 }
 
@@ -1478,7 +1493,7 @@ function prestige(){
   buildShop(); resetCounter(); gridDirty=true;
   STATIONS.forEach(st=>{ stock[st.id]=0; st.t=0; st.broken=false; st.fix=0; st.heat=0; st.smoke=0; st.fuel=undefined; });
   TABLES.forEach(t=>{ t.busy=null; t.dirty=false; t.cleanP=0; });
-  workers.length=0; waiters.length=0; asm.carry=[]; asm.state='idle'; customers=[]; pests=[]; loot=null; deliv=null; driveQ=[]; driveOut=[]; delivT=8; meltT=0; corpses=[]; fire=null; bar.stools=[null,null,null]; bench.jobs=[]; bench.out=[]; bench.t=0; ev=null; bus=null; evT=140;
+  workers.length=0; waiters.length=0; asm.carry=[]; asm.state='idle'; customers=[]; pests=[]; loot=null; deliv=null; driveQ=[]; driveOut=[]; delivT=8; meltT=0; corpses=[]; fire=null; bar.stools=[null,null,null]; BENCHES.forEach(b=>{ b.jobs=[]; b.out=[]; b.t=0; }); ev=null; bus=null; evT=140;
   player.carry=[]; if(guestP){ guestP.carry=[]; } player.x=3; player.y=5.6; streak=0; streakT=0; shownMoney=0;
   persist(); sfx('unlock');
   openModal(`<span class="eyebrow">Nouvelle boutique · ${save.stars} ★</span><h2>Bienvenue à ${SHOP.name}</h2>
@@ -1996,8 +2011,8 @@ function drawCounter(){
   }
   { const sp=special(), sx=X(dropSpot(sp).x+.62), sy=Y(9.55); ctx.fillStyle='#e8466a'; rr(sx-S*.32,sy-S*.14,S*.64,S*.28,S*.1); ctx.fill();
     ctx.fillStyle='#fff'; ctx.font=`800 ${S*.2}px "Baloo 2",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('×1,5',sx,sy+1); }
-  if(has('bench')){
-    const bx=X(BENCH.x), by=Y(BENCH.y);
+  for(const bench of benchesOn()){
+    const bx=X(bench.x), by=Y(bench.y);
     ctx.fillStyle='rgba(0,0,0,.2)'; rr(bx-S*.6+3,by-S*.3+5,S*1.2,S*.6,S*.12); ctx.fill();
     ctx.fillStyle='#a8683c'; rr(bx-S*.6,by-S*.3,S*1.2,S*.6,S*.12); ctx.fill();
     ctx.fillStyle='#f2e3cf'; rr(bx-S*.55,by-S*.27,S*1.1,S*.42,S*.1); ctx.fill();
@@ -2757,7 +2772,7 @@ function hud(){
   else if(loot && (save.stats.found||0)<2) tip='Quelque chose brille en salle : va le ramasser avant qu’il disparaisse !';
   else if(save.lvl<=2 && save.xp>0 && (save.stats.served||0)<25 && save.tut>=5 && (save.play||0)<200) tip='Chaque client servi fait monter ton niveau de chef (en haut à gauche)';
   else if((save.stats.perfect||0)<3 && save.done.length>=1 && STATIONS.some(s=>unlockedStation(s)&&!s.tapped&&stock[s.id]<8&&s.t/srate(s)>=PERFECT[0]-.25)) tip='Tape un four quand sa barre passe dans la zone claire : fournée parfaite !';
-  else if(availMenus().length && (save.stats.combos||0)<2 && !bench.out.length && !benchUIOn) tip=`Porte 2 produits différents au plan de travail, puis choisis le ${COMBO_NAMES[save.shop%SHOPS.length][0].toLowerCase()} à préparer`;
+  else if(availMenus().length && (save.stats.combos||0)<2 && !benchOut() && !benchUIOn) tip=`Porte 2 produits différents au plan de travail, puis choisis ce que tu veux préparer`;
   else if(STATIONS.some(s=>s.broken) && !has('tech')) tip='Un four est cassé : reste devant pour le réparer (ou embauche un technicien)';
   else if(SHOP.mech==='heat' && STATIONS.some(s=>(s.heat||0)>.45)) tip='Un four surchauffe : vide son plateau !';
   else if(SHOP.mech==='wood' && STATIONS.some(s=>unlockedStation(s)&&PRODUCTS[s.product].look==='oven'&&s.fuel<=0)) tip='Un four n’a plus de bois : prends des bûches à droite';
@@ -2767,14 +2782,15 @@ function hud(){
   else if(openTables().some(t=>t.dirty) && !waiters.length && (save.daily.list.find(m=>m.id==='clean')||{prog:9}).prog<2 && player.y>9.9) tip='Reste près d’une table sale pour la nettoyer';
   // au plan de travail : les menus possibles avec ce qu'on porte
   let bui='';
-  if(scene==='shop' && has('bench') && $('modal').hidden && dist(player,BENCH)<1.3){
+  const hb=scene==='shop' && $('modal').hidden ? nearBench(player,1.3) : null;
+  if(hb){
     const carry=player.carry, ms=availMenus();
     const ok=ms.filter(m=>PRODUCTS[m].pair.every(k=>carry.includes(k)));
     if(ok.length) bui=ok.map(m=>`<button class="mbtn" data-menu="${m}"><span><img src="${ASSETS[PRODUCTS[m].pair[0]]}" alt=""><b>+</b><img src="${ASSETS[PRODUCTS[m].pair[1]]}" alt=""></span><small>${fmt(salePrice(m))}</small></button>`).join('');
-    else if(ms.length && !bench.out.length) bui=`<div class="mhint">Porte 2 produits différents pour préparer un ${COMBO_NAMES[save.shop%SHOPS.length][0].toLowerCase()}</div>`;
-    if(bui && bench.jobs.length>=3) bui=`<div class="mhint">Le plan de travail est plein, attends un peu</div>`;
+    else if(ms.length && !hb.out.length) bui=`<div class="mhint">Porte 2 produits différents pour préparer ${unCombo()}</div>`;
+    if(bui && hb.jobs.length>=3) bui=`<div class="mhint">Le plan de travail est plein, attends un peu</div>`;
   }
-  if(bui!==hud.bui){ hud.bui=bui; const el=$('benchUI'); el.innerHTML=bui?`<div class="mtitle">Préparer un ${COMBO_NAMES[save.shop%SHOPS.length][0].toLowerCase()}</div><div class="mrow">${bui}</div>`:''; el.hidden=!bui;
+  if(bui!==hud.bui){ hud.bui=bui; const el=$('benchUI'); el.innerHTML=bui?`<div class="mtitle">Préparer ${unCombo()}</div><div class="mrow">${bui}</div>`:''; el.hidden=!bui;
     el.querySelectorAll('[data-menu]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); audioOn(); chooseMenu(b.dataset.menu); }); }
   benchUIOn=!!bui;
   if(!$('title').hidden || !$('recap').hidden || benchUIOn) tip='';
@@ -3155,7 +3171,7 @@ function hostRecv(m){
   if(m.t==='p'){ const x=clamp(+m.x||0,0,WW), y=clamp(+m.y||0,0,23.9); if(gridDirty) buildGrid();
     if(walkable(x,y)){ guestP.x=x; guestP.y=y; } guestP.walk=+m.w||0; }
   if(m.t==='tap' && scene==='shop') tryHitWorld(+m.x,+m.y,false);
-  if(m.t==='menu' && scene==='shop' && dist(guestP,BENCH)<1.4) benchMake(guestP,m.m);
+  if(m.t==='menu' && scene==='shop'){ const b=nearBench(guestP,1.4); if(b) benchMake(guestP,m.m,b); }
   if(m.t==='cp'){ guestP.city={x:+m.x||0,y:+m.y||0,car:!!m.car,dir:m.dir||1,walk:+m.w||0,o:guestP.o,hat:guestP.hat}; }
   if(m.t==='fix'){ const c=(save.city||[])[m.i]; if(c && c.inc){ const def=SHOPS[c.shop%SHOPS.length], bonus=Math.round(c.rate*Math.pow(1.6,c.lvl||0)*120);
     c.inc=null; save.money+=bonus; stat('earned',bonus); stat('fixed'); gainXP(10); sfx('unlock'); persist(); toast(`Ton ami a réglé le problème à ${def.name} : +${fmt(bonus)}`); netToasts.push(`Prime de ${fmt(bonus)} pour ${def.name} !`); } }
@@ -3178,7 +3194,7 @@ function snapState(){
     wo:workers.map(w=>P(w).concat([w.face,w.carry])), wa:waiters.map(w=>P(w).concat([w.face,w.carry])),
     np:{tech:P(tech),asm:P(asm).concat([asm.carry]),hcat:P(hcat),cat:P(cat)},
     sta:STATIONS.map(st=>[stock[st.id],r2(st.t),st.broken?1:0,r2(st.fix||0),r2(st.heat||0),r2(st.smoke||0),st.fuel===undefined?-1:st.fuel,st.tapped?1:0]),
-    co:counter, be:{j:bench.jobs,t:r2(bench.t),o:bench.out}, br:[r2(bar.by),r2(bar.shake)], cp:corpses, fi:fire?{x:r2(fire.x),s:fire.state,m:fire.men.map(m=>[r2(m.x),r2(m.y),r2(m.walk||0)]),c:fire.car}:null,
+    co:counter, be:BENCHES.map(b=>({j:b.jobs,t:r2(b.t),o:b.out})), br:[r2(bar.by),r2(bar.shake)], cp:corpses, fi:fire?{x:r2(fire.x),s:fire.state,m:fire.men.map(m=>[r2(m.x),r2(m.y),r2(m.walk||0)]),c:fire.car}:null,
     fz:staffList().map(e=>e.frozen?1:0), tb:TABLES.map(t=>[t.dirty?1:0,r2(t.cleanP||0)]),
     dv:deliv, dq:driveQ, do:driveOut, lo:loot, ev:ev?{type:ev.type,t:r2(ev.t),max:ev.max}:null, bus:bus?{x:r2(bus.x),t:r2(bus.t)}:null,
     ct:contest?{t:r2(contest.t),n:contest.n,goals:contest.goals}:null,
@@ -3269,7 +3285,7 @@ function guestApply(m){
   if(m.fz) staffList().forEach((e,i)=>{ e.frozen=!!m.fz[i]; });
   const np=(o,a)=>{ o.tx=a[0]; o.ty=a[1]; o.dir=a[3]; };
   np(tech,m.np.tech); np(asm,m.np.asm); asm.carry=m.np.asm[4]; np(hcat,m.np.hcat); np(cat,m.np.cat);
-  bench.jobs=m.be.j||[]; bench.t=m.be.t||0; bench.out=m.be.o||[];
+  (Array.isArray(m.be)?m.be:[m.be]).forEach((o,i)=>{ const b=BENCHES[i]; if(b&&o){ b.jobs=o.j||[]; b.t=o.t||0; b.out=o.o||[]; } });
   deliv=m.dv; driveQ=m.dq||[]; driveOut=m.do||[]; loot=m.lo; ev=m.ev; bus=m.bus; contest=m.ct;
   fx=m.fx; flyers=m.fl; Object.assign(padFlash,m.pf);
   partner.tx=m.h.x; partner.ty=m.h.y; partner.carry=m.h.c; partner.o=m.h.o; partner.hat=m.h.hat;
