@@ -242,6 +242,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ucard li.nt{color:var(--muted)}
 .ucard li.dn{color:#c2334f}.ucard li.dn::before{content:"– "}
 .ucard small{padding-left:40px;color:var(--muted);font-size:.74rem;font-weight:700}
+.devgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.devgrid .btn{white-space:normal}
 </style>
 <script>
 /* Version web : jeu 100 % gratuit, sans pub ni achat. */
@@ -2935,6 +2937,53 @@ function guestLost(){
   $('mYes').onclick=leaveGuest;
 }
 function leaveGuest(){ persistGuest(); netStop(true); setTimeout(()=>location.reload(),150); }
+
+/* ================= mode créateur (caché) =================
+   7 tapes rapides sur le titre « Le Fournil » ou sur le compteur de pièces, puis le code secret.
+   Seule une empreinte du code est stockée ici, pas le code lui-même. */
+const DEV_HASH='12oor1q';
+const devHash = s => { let x=2166136261>>>0; for(const c of s.toUpperCase()){ x^=c.charCodeAt(0); x=Math.imul(x,16777619)>>>0; } return x.toString(36); };
+let devTaps=[];
+function devTap(){
+  const now=Date.now(); devTaps=devTaps.filter(t=>now-t<3000); devTaps.push(now);
+  if(devTaps.length<7) return false;
+  devTaps=[]; if(guestView) return true;
+  if(save.dev) devPanel(); else devAsk();
+  return true;
+}
+function devAsk(){
+  openModal(`<span class="eyebrow">Accès réservé</span><h2>Code créateur</h2>
+    <div class="codebox"><input id="dvCode" type="password" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code"><button class="btn" id="dvOk">OK</button></div>
+    <button class="btn ghost" id="mNo">Annuler</button>`);
+  $('mNo').onclick=closeModal; const i=$('dvCode'); i.focus();
+  const go=()=>{ if(devHash(i.value.trim())===DEV_HASH){ save.dev=true; persist(); devPanel(); } else { i.value=''; toast('Code incorrect'); } };
+  $('dvOk').onclick=go; i.onkeydown=e=>{ if(e.key==='Enter') go(); };
+}
+function devJump(i){
+  // va directement à la boutique i, comme si les précédentes étaient terminées
+  save.city=[]; for(let k=0;k<i;k++) save.city.push({shop:k,name:SHOPS[k%SHOPS.length].name,rate:3*Math.pow(3,k),lvl:0,v:0,inc:null});
+  Object.assign(save,{shop:i,stars:i,money:0,cash:0,paid:{},done:[],lv:{},tcash:{},play:600,ratings:[4,4,4,4,4,4],tut:Math.max(save.tut||0,5)});
+  persist(); location.reload();
+}
+function devPanel(){
+  openModal(`<span class="eyebrow">Mode créateur</span><h2>Raccourcis</h2>
+    <p class="hint2">Boutique actuelle : ${SHOP.name}. Changer de boutique recharge le jeu (ta progression dans la boutique actuelle repart de zéro).</p>
+    <div class="devgrid">${SHOPS.map((sh,i)=>`<button class="btn small ${i===save.shop?'gold':''}" data-dvshop="${i}">${i+1}. ${sh.name}</button>`).join('')}</div>
+    <button class="btn" id="dvAll">Tout débloquer dans cette boutique</button>
+    <div class="devgrid"><button class="btn small" id="dvMoney">+ ${fmt(100000*MULT)} pièces</button><button class="btn small" id="dvTix">+ 50 tickets</button><button class="btn small" id="dvLvl">+ 5 niveaux</button><button class="btn small" id="dvNext">Boutique suivante</button></div>
+    <button class="btn ghost small" id="dvOff">Oublier le code sur cet appareil</button>
+    <button class="btn ghost" id="mNo">Fermer</button>`);
+  $('mNo').onclick=closeModal;
+  $('mBox').querySelectorAll('[data-dvshop]').forEach(b=>b.onclick=()=>devJump(+b.dataset.dvshop));
+  $('dvNext').onclick=()=>devJump(save.shop+1);
+  $('dvAll').onclick=()=>{ save.done=padList().map(p=>p.id); persist(); location.reload(); };
+  $('dvMoney').onclick=()=>{ save.money+=100000*MULT; persist(); toast('+'+fmt(100000*MULT)+' pièces'); };
+  $('dvTix').onclick=()=>{ save.tickets=(save.tickets||0)+50; persist(); toast('+50 tickets'); };
+  $('dvLvl').onclick=()=>{ for(let i=0;i<5;i++){ save.xp=0; save.lvl++; } applyPerks(); persist(); toast('Niveau '+save.lvl); };
+  $('dvOff').onclick=()=>{ save.dev=false; persist(); closeModal(); };
+}
+document.querySelector('.tlogo').addEventListener('click',()=>devTap());
+document.querySelector('.money').addEventListener('click',()=>devTap());
 
 /* ================= boucle ================= */
 let last=performance.now(), saveT=0, achT=0;
