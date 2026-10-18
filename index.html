@@ -231,6 +231,17 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .spin{width:38px;height:38px;border-radius:50%;border:4px solid rgba(42,28,20,.12);border-top-color:var(--crust);align-self:center;animation:sp 0.9s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.ugrid{display:flex;flex-direction:column;gap:8px}
+.ucard{border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.ucard.on{border-color:var(--mint);background:#e9f8f1}
+.uhead{display:flex;align-items:center;gap:10px}
+.uhead img{width:30px;height:30px;flex:none}
+.uhead b{flex:1;min-width:0;font-size:.95rem}
+.ucard ul{margin:0;padding:0 0 0 40px;list-style:none;font-size:.82rem;font-weight:700;line-height:1.35}
+.ucard li.up{color:#1f8a5e}.ucard li.up::before{content:"+ "}
+.ucard li.nt{color:var(--muted)}
+.ucard li.dn{color:#c2334f}.ucard li.dn::before{content:"– "}
+.ucard small{padding-left:40px;color:var(--muted);font-size:.74rem;font-weight:700}
 </style>
 <script>
 /* Version web : jeu 100 % gratuit, sans pub ni achat. */
@@ -470,7 +481,7 @@ function buildShop(){
   Object.assign(PADICON, {a2:SHOP.A.k, a3:SHOP.A.k, b1:SHOP.B.k, b2:SHOP.B.k, c1:SHOP.C.k, c2:SHOP.C.k, mech:SHOP.extra?SHOP.extra.icon:'coin'});
 }
 buildShop();
-const srate = st => PRODUCTS[st.product].rate / Math.pow(1.22, save.lv[st.id]||0) / boostMul('prod');
+const srate = st => PRODUCTS[st.product].rate / Math.pow(1.22, save.lv[st.id]||0) / boostMul('prod') / uniProd();
 const slotOf = p => PRODUCTS[p].slot;
 const dropSpot = p => ({x:DROPX[slotOf(p)], y:8.45});      // côté cuisine
 const barSpot = p => ({x:DROPX[slotOf(p)], y:10.3});       // côté salle
@@ -558,6 +569,7 @@ const ACH=[
   {id:'mst1', k:'master', n:1,    t:5, txt:'Maîtriser complètement un produit'},
   {id:'gft7', k:'gifts',  n:7,    t:2, txt:'Récupérer 7 cadeaux du jour'},
   {id:'rec5', k:'records',n:5,    t:2, txt:'Battre 5 fois ton record de la journée'},
+  {id:'uni3', k:'uniforms',n:3,    t:2, txt:'Acheter 3 tenues au casier'},
   {id:'coop1',k:'coop',   n:1,    t:2, txt:'Jouer une partie à deux'},
 ];
 const achVal = k => k==='lvl' ? save.lvl : k==='master' ? Object.keys(save.sold||{}).filter(p=>(save.sold[p]||0)>=MASTER[3]).length : k==='loyalMax' ? Math.max(0,...Object.values(save.loyal||{})) : k==='shops' ? (save.stars||0) : k==='album' ? Object.keys(save.album).length : (save.stats[k]||0);
@@ -716,7 +728,7 @@ const popularity = () => (1 + Math.min((save.play||0)/900,.6) + (has('sign')?.2:
 const spawnInterval = () => Math.max(.7, Math.min(6, 2.2/(.8*production()*popularity())));
 const maxQ = () => Math.min(14, 3 + STATIONS.filter(unlockedStation).length);
 const SLOTS = [...Array(9)].map((_,i)=>({x:REG.x,y:10.5+i*1.0})).concat([...Array(5)].map((_,i)=>({x:REG.x-1.3,y:18.5-i*1.0})));
-const patienceMul = () => (has('music')?1.3:1) * (perk('patience')?1.1:1);
+const patienceMul = () => (has('music')?1.3:1) * (perk('patience')?1.1:1) * uniPat();
 
 /* ================= hors ligne & ville ================= */
 let offline = 0;
@@ -819,7 +831,7 @@ function served(c,mult){
   if(c.special==='influ'){ buzzT=90; toast('Vidéo publiée : plus de clients pendant 90 s'); sfx('unlock'); }
   const tipPct = (Math.min(streak-1,10)*.1 + (c.vip?2:0) + (c.special==='critic'?3:0) + (c.tourist?.2:0) + (c.rushy?.5:0)) * (perk('tips')?1.2:1);
   gainXP(c.vip?3:c.kind==='table'?2:1);
-  return Math.round(c.pay*mult*(1+tipPct)*(rushT>0?2:1));
+  return Math.round(c.pay*mult*(1+tipPct)*(rushT>0?2:1)*(c.server?uf(c.server,'tips'):1));
 }
 function sold(p){
   const before=mastery(p); save.sold[p]=(save.sold[p]||0)+1;
@@ -929,7 +941,7 @@ function update(dt){
   const head=queue.find(c=>c.state!=='out');
   if(head && head.state==='wait' && cashierHere){
     head.t+=dt;
-    if(head.t>.28){ head.t=0;
+    if(head.t>.28/(has('cashier')?uf('cashier','cash'):1)){ head.t=0; if(has('cashier')) head.server='cashier';
       const need=Object.keys(head.want).find(p=>(head.got[p]||0)<head.want[p] && counter[p]>0);
       if(need){ head.stuck=0; counter[need]--; head.got[need]=(head.got[need]||0)+1; head.pay+=salePrice(need); sold(need); if(need==='combo') stat('combos');
         flyers.push({type:need,x:dropSpot(need).x,y:9.2,tx:head.x,ty:head.y-.4,t:0}); }
@@ -948,6 +960,7 @@ function update(dt){
 
   // argent et ménage
   if(dist(player,CITYPAD)<.55){ goCity(); return; }
+  if(has('baker')){ const dl=dist(player,LOCKER); if(dl<.55 && !lockerNear){ lockerNear=true; openLocker(); } else if(dl>1.1) lockerNear=false; }
   if(has('accountant')){ acctT+=dt; if(acctT>1.2){ acctT=0;
     if(save.cash>=1){ collect(save.cash,CASH); save.cash=0; }
     for(const t of openTables()){ const v=save.tcash[t.id]||0; if(v>0){ save.tcash[t.id]=0; collect(v,t); } } } }
@@ -1045,7 +1058,7 @@ function updateStations(dt){
 
 function interact(ent,dt,isPlayer){
   ent.t+=dt;
-  const capN = isPlayer?cap():4;
+  const capN = isPlayer?cap():(ent.cap||4);
   for(const s of STATIONS){ if(!unlockedStation(s)) continue;
     if(dist(ent,pickSpot(s))<.9 && stock[s.id]>0 && ent.carry.length<capN && ent.t>.11){
       stock[s.id]--; ent.carry.push(s.product); ent.t=0; if(isPlayer){ sfx('pick'); if(save.tut===0) save.tut=1; } } }
@@ -1099,7 +1112,8 @@ function dropCounter(ent,isPlayer){
 }
 
 function bakerAI(w,dt){
-  const go=t=>navTo(w,t,2.3*boostMul('staff'),dt);
+  const role='baker'+workers.indexOf(w); w.cap=Math.max(1,4+uf(role,'carry'));
+  const go=t=>navTo(w,t,2.3*boostMul('staff')*uf(role,'spd'),dt);
   if(w.state==='idle'){
     const opts=STATIONS.filter(s=>unlockedStation(s)&&stock[s.id]>0&&counter[s.product]<COUNTER_MAX-2);
     if(opts.length){ opts.sort((a,b)=>((b.heat||0)-(a.heat||0))*20||(counter[a.product]-counter[b.product])||(stock[b.id]-stock[a.id])); w.target=opts[workers.indexOf(w)%opts.length]||opts[0]; w.state='fetch'; }
@@ -1113,7 +1127,8 @@ function bakerAI(w,dt){
 }
 // le serveur reste en salle : il prend au bar côté salle et contourne les tables
 function waiterAI(w,dt){
-  const go=t=>navTo(w,t,2.8*boostMul('staff'),dt);
+  const role='waiter'+waiters.indexOf(w); w.cap=Math.max(1,4+uf(role,'carry'));
+  const go=t=>navTo(w,t,2.8*boostMul('staff')*uf(role,'spd'),dt);
   w.t+=dt;
   if(w.state==='idle'){
     w.job=null;
@@ -1133,9 +1148,9 @@ function waiterAI(w,dt){
     const d=go(barSpot(w.job.p));
     if(d<.35 && w.t>.15){
       const n=c.want[w.job.p]-(c.got[w.job.p]||0)-w.carry.filter(x=>x===w.job.p).length;
-      if(n>0 && counter[w.job.p]>0 && w.carry.length<4){ counter[w.job.p]--; w.carry.push(w.job.p); w.t=0; sfx('pick'); }
+      if(n>0 && counter[w.job.p]>0 && w.carry.length<w.cap){ counter[w.job.p]--; w.carry.push(w.job.p); w.t=0; sfx('pick'); }
       else { const other=Object.keys(c.want).find(k=>k!==w.job.p && (c.got[k]||0)+w.carry.filter(x=>x===k).length<c.want[k] && counter[k]>0);
-        if(other && w.carry.length<4) w.job.p=other; else w.state=w.carry.length?'serve':'idle'; }
+        if(other && w.carry.length<w.cap) w.job.p=other; else w.state=w.carry.length?'serve':'idle'; }
     }
   }
   if(w.state==='serve'){
@@ -1143,11 +1158,11 @@ function waiterAI(w,dt){
     if(!c||c.state!=='sit'){ w.state='return'; return; }
     const d=go({x:t.x,y:t.y+.72});
     if(d<.3 && w.t>.12){ const i=w.carry.findIndex(p=>(c.got[p]||0)<c.want[p]);
-      if(i>=0){ giveTable(c,w.carry.splice(i,1)[0]); w.t=0; } else w.state=w.carry.length?'return':'idle'; }
+      if(i>=0){ c.server=role; giveTable(c,w.carry.splice(i,1)[0]); w.t=0; } else w.state=w.carry.length?'return':'idle'; }
   }
   if(w.state==='clean'){
     const t=w.job.t; if(!t.dirty){ w.state='idle'; w.job=null; return; }
-    const d=go({x:t.x,y:t.y+.72}); if(d<.35) cleanTable(t,dt*.8);
+    const d=go({x:t.x,y:t.y+.72}); if(d<.35) cleanTable(t,dt*.8*uf(role,'clean'));
   }
   if(w.state==='return'){ const p=w.carry[0]; if(!p){ w.state='idle'; return; }
     if(go(barSpot(p))<.35){ counter[p]=Math.min(COUNTER_MAX,counter[p]+1); w.carry.shift(); } }
@@ -1168,7 +1183,7 @@ const tech={x:12.8,y:4.6,walk:0,dir:1};
 function techAI(dt){
   const s=STATIONS.find(s=>unlockedStation(s)&&s.broken);
   if(!s){ navTo(tech,{x:12.9,y:4.6},2,dt); return; }
-  if(navTo(tech,pickSpot(s),3.2*boostMul('staff'),dt)<.5){ s.fix=(s.fix||0)+dt/2.5; if(Math.random()<.1) sfx('tick');
+  if(navTo(tech,pickSpot(s),3.2*boostMul('staff')*uf('tech','spd'),dt)<.5){ s.fix=(s.fix||0)+dt/2.5*uf('tech','spd'); if(Math.random()<.1) sfx('tick');
     if(s.fix>=1){ s.broken=false; s.fix=0; sfx('unlock'); fx.push({x:s.x,y:1.9,txt:'Réparé !',col:'#3fbf8f',t:0}); } }
 }
 // le commis d'assemblage prépare les formules à partir du comptoir
@@ -1181,7 +1196,7 @@ function srcOf(p){
 }
 function asmAI(dt){
   if(!has('bench')) return;
-  const A=SHOP.A.k, B=SHOP.B.k, go=t=>navTo(asm,t,2.5*boostMul('staff'),dt), at={x:BENCH.x,y:BENCH.y+.75};
+  const A=SHOP.A.k, B=SHOP.B.k, go=t=>navTo(asm,t,2.5*boostMul('staff')*uf('asm','spd'),dt), at={x:BENCH.x,y:BENCH.y+.75};
   asm.t+=dt;
   if(asm.state==='idle'){
     if(bench.out>0 && counter.combo<COUNTER_MAX-2) asm.state='takeCombo';
@@ -1311,6 +1326,82 @@ function tryHitWorld(wx,wy,dry){
     if(wx>s.x-.7 && wx<s.x+.7 && wy>1.5 && wy<3.05){ if(!dry) tapStation(s); return true; }
   }
   return false;
+}
+/* ================= le casier : tenues des employés =================
+   Chaque tenue a un avantage et un inconvénient. On les achète avec des tickets chef, puis on choisit
+   au casier (à gauche de la cuisine) qui porte quoi. Les tenues se gardent d'une boutique à l'autre. */
+const UNIFORMS=[
+  {id:'classic',name:'Tablier classique',hat:'none',      cost:0,fx:{},                      plus:['Aucun effet'],minus:[]},
+  {id:'sprint', name:'Tenue de sprint',  hat:'cap',       cost:3,fx:{spd:1.3,carry:-2},      plus:['Vitesse +30 %'],minus:['Porte 2 objets de moins']},
+  {id:'poches', name:'Tablier à poches', hat:'beret',     cost:3,fx:{carry:3,spd:.8},        plus:['Porte 3 objets de plus'],minus:['Vitesse −20 %']},
+  {id:'menage', name:'Blouse d’entretien',hat:'ribbon',   cost:2,fx:{clean:2,carry:-1},      plus:['Nettoie les tables 2× plus vite'],minus:['Porte 1 objet de moins']},
+  {id:'turbo',  name:'Lunettes turbo',   hat:'sunglasses',cost:4,fx:{cash:1.6,tips:.85},     plus:['Encaisse 60 % plus vite'],minus:['Additions −15 % (moins de pourboire)']},
+  {id:'chic',   name:'Costume chic',     hat:'tophat',    cost:5,fx:{tips:1.25,spd:.85},     plus:['Additions +25 % (gros pourboires)'],minus:['Vitesse −15 %']},
+  {id:'chef',   name:'Toque étoilée',    hat:'graduation',cost:6,fx:{prod:1.1,spd:.9,carry:-1},plus:['Toute la production +10 %'],minus:['Vitesse −10 %','Porte 1 objet de moins']},
+  {id:'fete',   name:'Tenue de fête',    hat:'partyhat',  cost:4,fx:{pat:1.15,spd:.75},      plus:['Clients 15 % plus patients'],minus:['Vitesse −25 %']},
+];
+// ce qui compte pour chaque poste (pour signaler les tenues peu utiles)
+const UNI_REL={baker:['spd','carry','prod','pat'],waiter:['spd','carry','tips','clean','prod','pat'],cashier:['tips','cash','prod','pat'],asm:['spd','prod','pat'],tech:['spd','prod','pat']};
+const LOCKER={x:.95,y:6.45};
+save.uniforms=save.uniforms||{}; save.uniOwned=save.uniOwned||['classic'];
+const uniOf = role => UNIFORMS.find(u=>u.id===(save.uniforms[role]||'classic'))||UNIFORMS[0];
+const uf = (role,k) => { const v=uniOf(role).fx[k]; return v===undefined ? (k==='carry'?0:1) : v; };
+function staffRoles(){
+  const low=t=>t.charAt(0).toLowerCase()+t.slice(1), r=[];
+  workers.forEach((w,i)=>r.push({k:'baker'+i,type:'baker',name:i?'2e '+low(SHOP.staff):SHOP.staff,face:w.face}));
+  if(has('cashier')) r.push({k:'cashier',type:'cashier',name:'Caissière',face:'wcook_medium'});
+  waiters.forEach((w,i)=>r.push({k:'waiter'+i,type:'waiter',name:i?'2e serveur':'Serveur',face:w.face}));
+  if(has('assembler')) r.push({k:'asm',type:'asm',name:'Commis d’assemblage',face:'wcook_dark'});
+  if(has('tech')) r.push({k:'tech',type:'tech',name:'Technicien',face:'mcook_dark'});
+  return r;
+}
+function uniProd(){ let m=1; for(const r of staffRoles()) m*=uf(r.k,'prod'); return m; }
+function uniPat(){ let m=1; for(const r of staffRoles()) m*=uf(r.k,'pat'); return m; }
+const uHat = (role,def) => { const h=uniOf(role).hat; return h==='none' ? def : h; };
+let lockerNear=false;
+function openLocker(sel){
+  save.lockerSeen=1;
+  const roles=staffRoles();
+  if(!roles.length){ openModal(`<span class="eyebrow">Le casier</span><h2>Pas encore d’équipe</h2><p>Embauche un ${SHOP.staff.toLowerCase()} pour pouvoir l’habiller.</p><button class="btn gold" id="mNo">D’accord</button>`); $('mNo').onclick=closeModal; return; }
+  const r=roles.find(x=>x.k===sel);
+  if(!r){
+    const rows=roles.map(x=>{ const u=uniOf(x.k);
+      return `<div class="row-item"><img src="${ASSETS[x.face]}" alt=""><div class="ri-body"><b>${x.name}</b><span>${u.name}${u.id==='classic'?'':' · '+u.plus[0]}</span></div><button class="btn small" data-who="${x.k}">Changer</button></div>`; }).join('');
+    openModal(`<span class="eyebrow">Le casier</span><h2>Habille ton équipe</h2>
+      <p>Chaque tenue a un avantage et un inconvénient : à toi de choisir qui fait quoi dans ta boutique.</p>${rows}
+      <div class="wallet"><span><img src="${ASSETS.ticket}" alt=""> <b>${save.tickets||0}</b> tickets chef</span></div>
+      <button class="btn ghost" id="mNo">Fermer</button>`);
+    $('mNo').onclick=closeModal;
+    $('mBox').querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>openLocker(b.dataset.who));
+    return;
+  }
+  const cards=UNIFORMS.map(u=>{ const on=uniOf(r.k).id===u.id, own=save.uniOwned.includes(u.id);
+    const useful=u.id==='classic' || Object.keys(u.fx).some(k=>(k==='carry'?u.fx[k]>0:u.fx[k]>1) && UNI_REL[r.type].includes(k));
+    const btn = on ? '<span class="ri-done">Portée</span>' : own ? `<button class="btn small" data-wear="${u.id}">Mettre</button>`
+      : `<button class="btn small gold" data-buyu="${u.id}" ${(save.tickets||0)<u.cost?'disabled':''}><img class="mini" src="${ASSETS.ticket}" alt="">${u.cost}</button>`;
+    return `<div class="ucard ${on?'on':''}"><div class="uhead"><img src="${ASSETS[u.hat==='none'?'tshirt':u.hat]}" alt=""><b>${u.name}</b>${btn}</div>
+      <ul>${u.plus.map(t=>`<li class="${u.id==='classic'?'nt':'up'}">${t}</li>`).join('')}${u.minus.map(t=>`<li class="dn">${t}</li>`).join('')}</ul>${useful?'':'<small>Peu utile pour ce poste</small>'}</div>`; }).join('');
+  openModal(`<span class="eyebrow">Le casier · ${r.name}</span><h2>Choisis sa tenue</h2>
+    <div class="wallet"><span><img src="${ASSETS.ticket}" alt=""> <b>${save.tickets||0}</b> tickets chef</span></div>
+    <div class="ugrid">${cards}</div><button class="btn ghost" id="mBack">Retour au casier</button>`);
+  $('mBack').onclick=()=>openLocker();
+  $('mBox').querySelectorAll('[data-wear]').forEach(b=>b.onclick=()=>{ save.uniforms[r.k]=b.dataset.wear; sfx('pick'); persist(); openLocker(r.k); });
+  $('mBox').querySelectorAll('[data-buyu]').forEach(b=>b.onclick=()=>{ const u=UNIFORMS.find(x=>x.id===b.dataset.buyu); if((save.tickets||0)<u.cost) return;
+    save.tickets-=u.cost; save.uniOwned.push(u.id); save.uniforms[r.k]=u.id; stat('uniforms'); sfx('unlock'); vibrate(20); persist(); toast(`${u.name} débloqué !`); openLocker(r.k); });
+}
+function drawLocker(now){
+  if(!has('baker')) return;
+  const x0=X(.36), y0=Y(5.25), w=S*1.0, h=S*1.05;
+  ctx.fillStyle='rgba(0,0,0,.2)'; rr(x0+3,y0+5,w,h,S*.08); ctx.fill();
+  const g=ctx.createLinearGradient(x0,0,x0+w,0); g.addColorStop(0,'#7d8fa8'); g.addColorStop(.5,'#b8c6d8'); g.addColorStop(1,'#6f8199');
+  ctx.fillStyle=g; rr(x0,y0,w,h,S*.08); ctx.fill();
+  ctx.strokeStyle='rgba(30,40,60,.45)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x0+w/2,y0+3); ctx.lineTo(x0+w/2,y0+h-3); ctx.stroke();
+  for(let i=0;i<3;i++){ ctx.fillStyle='rgba(30,40,60,.35)'; ctx.fillRect(x0+w*.12,y0+S*(.12+i*.07),w*.26,2); ctx.fillRect(x0+w*.62,y0+S*(.12+i*.07),w*.26,2); }
+  img('tshirt',x0+w/2,y0+h*.62,S*.5);
+  const pulse=!save.lockerSeen ? 1+Math.sin(now/200)*.1 : 1;
+  ctx.strokeStyle=save.lockerSeen?'rgba(255,255,255,.75)':'#ffc23d'; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(X(LOCKER.x),Y(LOCKER.y),S*.45*pulse,S*.22*pulse,0,0,7); ctx.stroke();
+  ctx.font=`800 ${S*.26}px "Nunito",sans-serif`; ctx.fillStyle='#2a1c14'; ctx.textAlign='center'; ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.75)';
+  ctx.strokeText('Casier',X(LOCKER.x),Y(LOCKER.y)+S*.48); ctx.fillText('Casier',X(LOCKER.x),Y(LOCKER.y)+S*.48);
 }
 const PERFECT=[.7,.94];
 function applyPerks(){ if(perk('perfect')){ PERFECT[0]=.64; PERFECT[1]=.96; } }
@@ -1644,7 +1735,7 @@ function draw(now){
   ctx.fillStyle='#4a4f5c'; ctx.fillRect(0,0,W,H);
   ctx.save();
   if(shake>0) ctx.translate((Math.random()-.5)*10*shake,(Math.random()-.5)*10*shake);
-  drawBuilding(now); drawPads(now); drawStations(now); drawCounter();
+  drawBuilding(now); drawPads(now); drawLocker(now); drawStations(now); drawCounter();
 
   const ents=[];
   openTables().forEach(t=>ents.push({y:t.y,draw:()=>drawTable(t,now)}));
@@ -1661,11 +1752,11 @@ function draw(now){
       else if(c.kind==='queue' && c.state==='wait'){ const items=Object.keys(c.want).filter(p=>(c.got[p]||0)<c.want[p]);
         if(items.length){ const bw=S*(.2+items.length*.85), left=c.slot&&c.slot.x<REG.x-.5; bubble(items,c.want,c.got,left?h.px-S*.4-bw:h.px+S*.4,h.py+S*.08,c.pat/c.patMax); } }
     }}); });
-  if(has('cashier')) ents.push({y:REG.y,draw:()=>drawPerson(REG.x,REG.y-.1,'wcook_medium','',now/400,{cook:true})});
-  workers.forEach(w=>ents.push({y:w.y,draw:()=>{ const h=drawPerson(w.x,w.y,w.face,'',w.walk,{cook:true}); drawStack(w.carry,h.px,h.py-S*.05); }}));
-  waiters.forEach(w=>ents.push({y:w.y,draw:()=>{ const h=drawPerson(w.x,w.y,w.face,'',w.walk,{cook:true}); drawStack(w.carry,h.px,h.py-S*.05); }}));
-  if(has('tech')) ents.push({y:tech.y,draw:()=>{ drawPerson(tech.x,tech.y,'mcook_dark','',tech.walk,{cook:true,hat:'helmet'}); }});
-  if(has('assembler')) ents.push({y:asm.y,draw:()=>{ const h=drawPerson(asm.x,asm.y,'wcook_dark','',asm.walk,{cook:true,hat:'cap'}); drawStack(asm.carry,h.px,h.py-S*.05); }});
+  if(has('cashier')) ents.push({y:REG.y,draw:()=>drawPerson(REG.x,REG.y-.1,'wcook_medium','',now/400,{cook:true,hat:uHat('cashier')})});
+  workers.forEach((w,i)=>ents.push({y:w.y,draw:()=>{ const h=drawPerson(w.x,w.y,w.face,'',w.walk,{cook:true,hat:uHat('baker'+i)}); drawStack(w.carry,h.px,h.py-S*.05); }}));
+  waiters.forEach((w,i)=>ents.push({y:w.y,draw:()=>{ const h=drawPerson(w.x,w.y,w.face,'',w.walk,{cook:true,hat:uHat('waiter'+i)}); drawStack(w.carry,h.px,h.py-S*.05); }}));
+  if(has('tech')) ents.push({y:tech.y,draw:()=>{ drawPerson(tech.x,tech.y,'mcook_dark','',tech.walk,{cook:true,hat:uHat('tech','helmet')}); }});
+  if(has('assembler')) ents.push({y:asm.y,draw:()=>{ const h=drawPerson(asm.x,asm.y,'wcook_dark','',asm.walk,{cook:true,hat:uHat('asm','cap')}); drawStack(asm.carry,h.px,h.py-S*.05); }});
   if(has('shopcat')) ents.push({y:hcat.y,draw:()=>{ const px=X(hcat.x), py=Y(hcat.y), hop=Math.abs(Math.sin(hcat.walk))*S*.06;
     ctx.fillStyle='rgba(60,30,10,.22)'; ctx.beginPath(); ctx.ellipse(px,py+S*.15,S*.3,S*.1,0,0,7); ctx.fill();
     ctx.save(); ctx.translate(px,py-S*.2-hop); if(hcat.dir<0) ctx.scale(-1,1); img('wcat',0,0,S*.8); ctx.restore(); img('ribbon',px+S*.15,py-S*.55,S*.28); }});
@@ -2256,6 +2347,7 @@ function hud(){
   const tableWait=openTables().some(t=>t.busy&&t.busy.state==='sit'&&(t.busy.wait||0)>5);
   if(save.tut<5) tip=TIPS()[save.tut];
   else if(pests.some(p=>p.state!=='flee') && (save.chased||0)<3) tip='Tape la bestiole avec ton doigt pour la chasser !';
+  else if(has('baker') && !save.lockerSeen) tip='Nouveau : le casier, à gauche de la cuisine. Va habiller ton équipe !';
   else if(loot && (save.stats.found||0)<2) tip='Quelque chose brille en salle : va le ramasser avant qu’il disparaisse !';
   else if(save.lvl<=2 && save.xp>0 && (save.stats.served||0)<25 && save.tut>=5 && (save.play||0)<200) tip='Chaque client servi fait monter ton niveau de chef (en haut à gauche)';
   else if((save.stats.perfect||0)<3 && save.done.length>=1 && STATIONS.some(s=>unlockedStation(s)&&!s.tapped&&stock[s.id]<8&&s.t/srate(s)>=PERFECT[0]-.25)) tip='Tape un four quand sa barre passe dans la zone claire : fournée parfaite !';
@@ -2657,7 +2749,7 @@ function hostLost(){
 function snapState(){
   const P=o=>[r2(o.x),r2(o.y),r2(o.walk||0),o.dir||1];
   return {
-    s:{money:Math.floor(save.money),cash:Math.floor(save.cash),done:save.done,lv:save.lv,paid:save.paid,tcash:save.tcash,shop:save.shop,stars:save.stars,ratings:save.ratings,boosts:save.boosts},
+    s:{money:Math.floor(save.money),cash:Math.floor(save.cash),done:save.done,lv:save.lv,paid:save.paid,tcash:save.tcash,shop:save.shop,stars:save.stars,ratings:save.ratings,boosts:save.boosts,uniforms:save.uniforms},
     d:r2(dayT), rush:r2(rushT), st:streak, stT:r2(streakT), buzz:r2(buzzT),
     h:{x:r2(player.x),y:r2(player.y),w:r2(player.walk),c:player.carry,o:save.wardrobe.outfit,hat:save.wardrobe.hat},
     g:guestP?guestP.carry:[],
