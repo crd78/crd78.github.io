@@ -869,14 +869,9 @@ const cityMul = c => c.inc ? (c.inc.type==='panne' ? 0 : .4) : 1;
 const cityRateOf = c => c.rate*Math.pow(1.6,c.lvl||0)*cityMul(c);
 const cityRate = () => (save.city||[]).reduce((a,c)=>a+cityRateOf(c),0);
 (() => {
-  const away = Math.min((Date.now()-save.lastSeen)/1000, 7200);
-  if (away > 60 && (has('cashier')||hasBar()) && has('baker')){
-    const perSec = unlockedProducts().reduce((a,p)=>a+PRODUCTS[p].price/PRODUCTS[p].rate,0) * .35 * (has('baker2')?1.6:1) * (has('waiter')?1.3:1);
-    offline = Math.floor(away*perSec);
-  }
+  // on ne gagne rien quand on ne joue pas : ni la boutique, ni la ville ne rapportent pendant l'absence
   const awayC=Math.min((Date.now()-save.lastSeen)/1000, 8*3600);
   if((save.vault||0)>0 && (save.city||[]).length){ save.city[0].v=(save.city[0].v||0)+save.vault; save.vault=0; }
-  for(const c of (save.city||[])) c.v=(c.v||0)+cityRateOf(c)*awayC;
   // une longue absence peut laisser un petit problème dans une boutique
   if(awayC>900 && (save.city||[]).length && !save.city.some(c=>c.inc) && Math.random()<.6){ const c=save.city[Math.floor(Math.random()*save.city.length)]; c.inc={type:['panne','bestioles','rupture'][Math.floor(Math.random()*3)],at:Date.now()}; }
 })();
@@ -2486,7 +2481,7 @@ function onDoor(b){
   if(st.inc){ startFix(st.inc, def); return; }
   const c=st.entries[st.entries.length-1], r=cityRateOf(c), cost=Math.round(c.rate*900*Math.pow(2.2,c.lvl||0));
   openModal(`<span class="eyebrow">Boutique autonome</span><h2>${def.name}</h2>
-    <p>Elle tourne toute seule et rapporte <b>${fmt(r*60)} pièces par minute</b>, même quand tu ne joues pas. Les pièces s’accumulent devant sa porte.</p>
+    <p>Elle tourne toute seule et rapporte <b>${fmt(r*60)} pièces par minute</b> pendant que tu joues. Les pièces s’accumulent devant sa porte.</p>
     <div class="offer"><div><h3>Niveau ${(c.lvl||0)+1}</h3><p>Agrandir multiplie ses gains par 1,6.</p></div><button class="btn gold small" id="mUp" ${save.money<cost?'disabled':''}>Agrandir · ${fmt(cost)}</button></div>
     <button class="btn ghost" id="mNo">Ressortir</button>`);
   $('mNo').onclick=closeModal;
@@ -3022,13 +3017,13 @@ function menuHTML(){
     const city=(save.city||[]).length ? save.city.map((c,i)=>{ const r=c.rate*Math.pow(1.6,c.lvl||0), cost=Math.round(c.rate*900*Math.pow(2.2,c.lvl||0));
       return `<div class="row-item"><img src="${ASSETS.shop}" alt=""><div class="ri-body"><b>${c.name}</b><span>Niveau ${(c.lvl||0)+1} · ${fmt(r*60)} pièces/min</span></div>
         <button class="btn small" data-up="${i}" ${save.money<cost?'disabled':''}>Agrandir · ${fmt(cost)}</button></div>`; }).join('')
-      : `<p>Termine ${SHOP.name} et ouvre la boutique suivante : elle rejoindra ta ville et te rapportera de l'argent, même quand tu ne joues pas.</p>`;
+      : `<p>Termine ${SHOP.name} et ouvre la boutique suivante : elle rejoindra ta ville et te rapportera de l'argent pendant que tu joues.</p>`;
     const vault=Math.floor(cityVault()), st=save.stats;
     const stats=[['Clients servis',st.served],['Clients à table',st.tables],['Bestioles chassées',st.pests],['Tables nettoyées',st.cleaned],['Meilleure série','×'+(st.bestStreak||0)],['Clients VIP',st.vip],['Voitures servies au drive',st.deliv],['Rois chassés',st.boss],['Objets trouvés',st.found],['Médailles',st.medals],['Record arcade',(st.arcadeBest||0)+' pts'],['Meilleure journée',save.bestDay||0],['Pièces gagnées',st.earned],['Temps de jeu',Math.floor((st.time||0)/60)+' min']]
       .map(([l,v])=>`<div class="stat"><span>${l}</span><b>${typeof v==='number'?fmt(v):v||0}</b></div>`).join('');
     body=`<button class="btn gold" id="mGoCity">Aller en ville</button>${scene==='city'?'':''}
       <span class="eyebrow">Ma ville · ${save.stars||0} ★</span>
-      ${(save.city||[]).length?`<div class="offer feat"><div><h3>Coffre de la ville</h3><p>${fmt(cityRate()*60)} pièces/min, même hors ligne (8 h max)</p></div><button class="btn gold small" id="mVault" ${vault<1?'disabled':''}>+${fmt(vault)}</button></div>`:''}
+      ${(save.city||[]).length?`<div class="offer feat"><div><h3>Coffre de la ville</h3><p>${fmt(cityRate()*60)} pièces/min pendant que tu joues</p></div><button class="btn gold small" id="mVault" ${vault<1?'disabled':''}>+${fmt(vault)}</button></div>`:''}
       ${city}<span class="eyebrow">Statistiques</span><div class="stats">${stats}</div>`;
   }
   if(menuTab==='plus'){
@@ -3037,7 +3032,6 @@ function menuHTML(){
       <button class="tg ${save.sound?'on':''}" data-tg="sound">Sons</button>
       <button class="tg ${save.music?'on':''}" data-tg="music">Musique</button>
       <button class="tg ${save.vibe?'on':''}" data-tg="vibe">Vibrations</button>
-      ${NATIVE&&NATIVE.notify?`<button class="tg ${save.notif?'on':''}" data-tg="notif">Rappel coffre plein</button>`:''}
     </div>
     ${FREE ? `<span class="eyebrow">À propos</span><p class="hint2">Le Fournil est entièrement gratuit, sans pub et sans achat. Tout se débloque en jouant.</p>${NATIVE.privacyUrl?`<a class="note" href="${NATIVE.privacyUrl}" target="_blank" rel="noopener">Politique de confidentialité</a>`:''}` : `
     <span class="eyebrow">Soutenir le jeu</span>
@@ -3494,7 +3488,6 @@ function loop(now){
 document.addEventListener('visibilitychange',()=>{
   last=performance.now();
   if(document.hidden){ persist();
-    if(NATIVE && NATIVE.notify && save.notif && cityRate()>0) NATIVE.notify({inSeconds:8*3600, title:'Ton coffre de la ville est plein', body:'Tes boutiques ont rempli le coffre. Viens récupérer tes pièces !'});
   } else if(NATIVE && NATIVE.cancelNotify) NATIVE.cancelNotify();
 });
 showTitle();
