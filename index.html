@@ -39,6 +39,7 @@ img{max-width:100%}
 html,body{height:100%}
 body{background:#1f3f43;color:var(--ink);font-family:var(--body);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 button,.mbtn,.btn{touch-action:manipulation}
+.diffl{margin:.2rem 0 .6rem;font-weight:800}.diffl b{color:#e8466a;letter-spacing:.15em}
 #app{position:relative;height:100%;overflow:hidden}
 canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
@@ -395,16 +396,6 @@ const SHOPS = [
    A:{k:'oyster',st:'Banc d’huîtres',label:'huîtres',price:9,rate:8.4,look:'fridge'},
    B:{k:'steak',st:'Grill à viande',label:'tournedos',price:22,rate:14.0,look:'oven'},
    C:{k:'custard',st:'Poste à crèmes brûlées',label:'crèmes brûlées',price:14,rate:10.4,look:'fridge'}},
-  {name:'Le Glacier', wall:'#356894', brick:'#4b82b0', deco:['icecream','softice'], staff:'Glacier', mech:'melt', pests:['bee','seagull','penguin'],
-   extra:{label:'Vitrine réfrigérée',icon:'snowflake'}, intro:'Ce qui attend sur le comptoir fond petit à petit. Ne remplis pas trop : sers vite !',
-   A:{k:'softice',st:'Machine à glace',label:'glaces',price:3,rate:2.0,look:'fridge'},
-   B:{k:'bubbletea',st:'Bar à bubble tea',label:'bubble teas',price:5,rate:2.6,look:'machine'},
-   C:{k:'shavedice',st:'Granité géant',label:'granités',price:12,rate:3.8,look:'fridge'}},
-  {name:'La Pizzeria', wall:'#6e3426', brick:'#8a4635', deco:['tomato','cheese'], staff:'Pizzaïolo', mech:'wood', pests:['fly','mouse','cat'],
-   extra:{label:'Chariot à bois',icon:'wood'}, intro:'Les fours à pizza marchent au feu de bois. Prends des bûches à droite de la cuisine et nourris le feu !',
-   A:{k:'pizza',st:'Four à pizza',label:'pizzas',price:3,rate:2.0,look:'oven'},
-   B:{k:'salad',st:'Bar à salades',label:'salades',price:5,rate:2.6,look:'fridge'},
-   C:{k:'spaghetti',st:'Cuisine à pâtes',label:'pâtes',price:12,rate:3.8,look:'machine'}},
 ];
 /* ================= agencement de chaque boutique =================
    st : position des postes au mur du fond · drop : où l'on pose chaque famille au comptoir · reg : la caisse
@@ -416,21 +407,23 @@ const LAYOUTS = [
    tables:{t1:[2.0,12.4],t2:[11.9,12.4],t3:[2.0,15.0],t4:[11.9,15.0],t5:[2.0,17.6],t6:[11.9,17.6]}, shape:'booth', pads:{decor:[9.3,11.2]}},
   {st:{a1:1.4,a2:2.9,a3:4.4,b1:6.4,b2:7.9,c1:10.8,c2:12.4}, drop:{A:3.6,B:7.2,C:11.6,X:9.4}, reg:9.4, cash:[8.8,7.3], gap:'L', bench:[9.4,6.9], bench2:[3.0,7.0],
    tables:{t1:[2.4,12.3],t2:[5.8,12.3],t3:[2.4,15.9],t4:[5.8,15.9],t5:[8.9,14.1],t6:[8.9,17.8]}, shape:'gastro', pads:{decor:[4.1,10.9]}},
-  {st:{a1:1.4,a2:2.9,a3:4.4,b1:7.0,b2:8.5,c1:10.9,c2:12.4}, drop:{A:2.9,X:4.9,B:7.9,C:11.6}, reg:6.4, cash:[7.5,7.3], gap:'R', bench:[4.2,6.9], bench2:[9.6,7.1],
-   tables:{t1:[2.0,12.2],t2:[12.0,12.2],t3:[2.0,15.0],t4:[12.0,15.0],t5:[2.4,17.9],t6:[11.6,17.9]}, shape:'pastel', pads:{decor:[4.4,11.4]}},
-  {st:{b1:1.4,b2:2.9,a1:5.2,a2:6.8,a3:8.4,c1:10.9,c2:12.4}, drop:{B:2.8,A:6.8,X:8.6,C:11.6}, reg:4.6, cash:[3.4,7.3], gap:'L', bench:[6.0,6.9], bench2:[9.6,7.1],
-   tables:{t1:[7.4,12.6],t2:[10.4,12.6],t3:[7.4,15.6],t4:[10.4,15.6],t5:[1.9,12.6],t6:[10.4,18.4]}, shape:'checker', pads:{decor:[3.0,11.0]}},
 ];
 /* thème visuel : sols de cuisine et de salle, comptoir, postes */
 const THEMES = [
   {kf:'planks', k1:'#d6a465', df:'checker', d1:'#f3ece2', d2:'#cfe0d6', dsz:.958, cBody:'#5e3a26', cTop:['#f2e3cf','#d9c3a5'], front:'vitrine'},
   {kf:'tiles', k1:'#c9ccd1', k2:'#b6bac1', df:'checker', d1:'#f7f3ee', d2:'#d8443a', dsz:1.12, cBody:'#c0392b', cTop:['#fbfbfb','#e2e2e2'], front:'fastfood', oven:['#7d8590','#d5dae0','#6a717c']},
   {kf:'tiles', k1:'#3b3f47', k2:'#30333a', df:'gastro', d1:'#4a2b22', d2:'#6b1f2e', dsz:.7, cBody:'#2f333b', cTop:['#e8edf2','#b9c2cc'], front:'passe', oven:['#23262c','#4c525d','#1b1d22']},
-  {kf:'tiles', k1:'#e9f7f4', k2:'#d4efe9', df:'stripes', d1:'#ffe3ee', d2:'#e2f7f1', dsz:.7, cBody:'#6cc4dc', cTop:['#ffffff','#e3f4f8'], front:'glace'},
-  {kf:'terracotta', k1:'#c8714a', k2:'#b65f3a', df:'planks', d1:'#b98252', dsz:.7, cBody:'#8a4635', cTop:['#f4f1ec','#d9d3ca'], front:'pizza', oven:['#7e3624','#c4664a','#6a2c1c']},
 ];
-const LAY = () => LAYOUTS[save.shop % LAYOUTS.length];
-const THEME = () => THEMES[save.shop % THEMES.length];
+/* difficulté de chaque niveau : le Fournil est le plus doux, le fast-food plus nerveux, le resto chic le plus exigeant.
+   pat : patience des clients · pest : écart entre deux bestioles · stars : affichage */
+const DIFF = [
+  {pat:1.25, pest:1.4, cost:1.0,  stars:1},
+  {pat:1.05, pest:1.0, cost:1.05, stars:2},
+  {pat:.78,  pest:.8,  cost:1.25, stars:3},
+];
+const diff = () => DIFF[save.shop % SHOPS.length];
+const LAY = () => LAYOUTS[save.shop % SHOPS.length];
+const THEME = () => THEMES[save.shop % SHOPS.length];
 // au resto chic, chaque poste a son propre plat : la carte est bien plus variée
 const DISHES = {2:{
   a2:{k:'lobster', st:'Poste à homard',   label:'homards',        price:13, rate:10.0, look:'fridge'},
@@ -483,8 +476,8 @@ const PADS = [
   {id:'o2',     cost:1450, x:4.3, y:21.75, label:'Terrasse 2'},
   {id:'o3',     cost:1650, x:9.7, y:21.75, label:'Terrasse 3'},
   {id:'o4',     cost:1850, x:12.1,y:21.75, label:'Terrasse 4'},
-  {id:'accountant',cost:2400,x:2.2, y:6.3, label:'Comptable'},
-  {id:'tech',   cost:3200, x:10.6,y:6.2, label:'Technicien'},
+  {id:'accountant',cost:2000,x:2.2, y:6.3, label:'Comptable'},
+  {id:'tech',   cost:2800, x:10.6,y:6.2, label:'Technicien'},
   {id:'timer',  cost:3600, x:2.2, y:6.3, label:'Minuteur de précision'},
   {id:'shopcat',cost:3900, x:10.6,y:6.2, label:'Chat de la maison'},
   {id:'assembler',cost:4300,x:2.2,y:6.3, label:'Commis d’assemblage'},
@@ -493,7 +486,7 @@ const PADS = [
 ];
 const GASTRO_OFF = ['bench','bench2','assembler','cashier','t1','t2','t3'];   // au resto chic : pas de caisse ni de formules, 3 tables offertes
 // à partir de la 4e boutique, tout coûte un peu plus : chaque boutique garde sa durée
-const costMul = () => save.shop>=3 ? 1+.35*(save.shop-2) : 1;
+const costMul = () => diff().cost * (1+.3*Math.floor(save.shop/SHOPS.length));
 const padList = () => PADS.filter(p => (p.id!=='mech' || SHOP.extra) && (p.id!=='courier' || SHOP.mech==='drive') && (p.id!=='bar' || SHOP.mech==='gastro') && !(SHOP.mech==='gastro' && GASTRO_OFF.includes(p.id)));
 
 /* ================= sauvegarde ================= */
@@ -857,9 +850,9 @@ const isNight = () => dayT>.88 || dayT<.08;
 const raining = () => ev && ev.type==='rain';
 const production = () => STATIONS.filter(unlockedStation).reduce((a,s)=>a+1/srate(s),0);
 const popularity = () => (1 + Math.min((save.play||0)/900,.6) + (has('sign')?.2:0)) * (.6+.12*rating()) * dayFactor() * (buzzT>0?1.6:1) * (raining()?.8:1) * boostMul('crowd') * (contest?1.3:1) * (guestP?1.35:1);
-const spawnInterval = () => Math.max(.7, Math.min(isGastro()?9:6, 2.2/(.8*production()*popularity())*(isGastro()?1.7:1)*(ev&&EVENTS[ev.type].crowd||1)));
+const spawnInterval = () => Math.max(.7, Math.min(isGastro()?9:6, 2.2/(.8*production()*popularity())*(isGastro()?1.5:1)*(ev&&EVENTS[ev.type].crowd||1)));
 const maxQ = () => Math.min(14, 3 + STATIONS.filter(unlockedStation).length);
-const patienceMul = () => Math.max(.72, 1-.01*save.done.length) * (has('music')?1.3:1) * (perk('patience')?1.1:1) * uniPat() * (hasBar()?1.15:1);
+const patienceMul = () => diff().pat * Math.pow(.92, Math.floor(save.shop/SHOPS.length)) * Math.max(.72, 1-.01*save.done.length) * (has('music')?1.3:1) * (perk('patience')?1.1:1) * uniPat() * (hasBar()?1.15:1);
 
 /* ================= hors ligne & ville ================= */
 let offline = 0;
@@ -923,7 +916,7 @@ function newCustomer(kind,opts={}){
   if(reg && !courses && kind!=='bar'){ let h=0; for(const ch of reg.id) h+=ch.charCodeAt(0); const fav=prods[h%prods.length]; want[fav]=(want[fav]||0)+1; }
   if(vip) sfx('vip');
   const side=Math.random()<.5, hue=Math.floor(Math.random()*360);
-  const pat=(kind==='table'?55:42)*patienceMul()*(vip?.8:1)*(opts.special==='critic'?.75:1)*(reg?1.4:1)*(rushy?.55:1)*(glutton?1.3:1)*(courses?.62:1)*(1+.12*(party-1))*(suit?.5:1);
+  const pat=(kind==='table'?55:42)*patienceMul()*(vip?.8:1)*(opts.special==='critic'?.75:1)*(reg?1.4:1)*(rushy?.55:1)*(glutton?1.3:1)*(courses?.62:1)*(1+.12*(party-1))*(suit?.62:1);
   const mates=[...Array(party-1)].map(()=>({face:pick(FACES)+'_'+pick(TONES),col:`hsl(${Math.floor(Math.random()*360)},55%,58%)`}));
   const c={id:++entSeq,kind,x:side?-.6:14.6,y:WALK_Y+(Math.random()-.5)*.3,want,got:{},state:'in',face:suit?'tux_'+pick(TONES):reg?reg.face:opts.face||pick(FACES)+'_'+pick(TONES),suit, reg:reg&&reg.id, regName:reg&&reg.name,
     vip,special:opts.special,tourist:opts.tourist,gala:!!(ev&&ev.type==='gala'),rushy:rushy&&!courses,glutton:glutton&&!courses,courses,course:0,party,mates,col:suit?'#16161b':vip?'#ffc23d':opts.special==='critic'?'#2a1c14':`hsl(${hue},55%,58%)`,
@@ -946,7 +939,7 @@ function spawnCustomer(opts={}){
   if(isGastro()){ const st=freeStools();
     if(st.length && !opts.special && (!freeT.length || Math.random()<.3)) return newCustomer('bar',{...opts,stool:pick(st)});
     // rarement, un client en costume noir
-    if(freeT.length && !opts.special && staffList().length && save.done.length>=3 && !customers.some(c=>c.suit && c.state!=='out') && Math.random()<(ev&&ev.type==='gala'?.12:.04)) return newCustomer('table',{...opts,table:pick(freeT),suit:true});
+    if(freeT.length && !opts.special && staffList().length && save.done.length>=3 && !customers.some(c=>c.suit && c.state!=='out') && Math.random()<(ev&&ev.type==='gala'?.08:.02)) return newCustomer('table',{...opts,table:pick(freeT),suit:true});
     return freeT.length ? newCustomer('table',{...opts,table:pick(freeT)}) : null; }
   const qLen=customers.filter(c=>c.kind==='queue'&&c.state!=='out').length;
   const tablePref = raining()?.35:.45;
@@ -1022,7 +1015,31 @@ function settle(c){
   fx.push({x:c.x,y:c.y-1.3,txt:`Pas de ${lbl} ? Tant pis`,col:'#fff7ee',t:0});
   if(c.state==='sit') c.state='eat', c.eatT=4.5;
 }
+let defiT=70; const servedLog=[];
+function defiTick(dt){
+  if(ev && ev.type==='defi'){
+    if(ev.n>=ev.goal && !ev.won){ ev.won=true; const pad=visiblePads().find(p=>!p.kind)||visiblePads()[0];
+      const gift=Math.round(Math.max(40*MULT, pad ? (pad.cost-(save.paid[pad.id]||0))*.35 : 0));
+      save.money+=gift; stat('earned',gift); save.tickets=(save.tickets||0)+1; stat('defis'); sfx('unlock'); vibrate(40); gainXP(4);
+      const msg=`Défi réussi ! +${fmt(gift)} et 1 ticket chef`; toast(msg); if(guestP) netToasts.push(msg);
+      for(let i=0;i<14;i++) fx.push({x:player.x+(Math.random()-.5)*1.6,y:player.y-1+(Math.random()-.5),spr:pick(['coin','sparkles','star2']),t:-Math.random()*.4});
+      ev.t=Math.min(ev.t,1.2); }
+    return;
+  }
+  // seulement pendant les phases d'économie : rien d'achetable, pas d'autre événement
+  const base=visiblePads().filter(p=>!p.kind);
+  const saving = base.length && base.every(p=>save.money+(save.paid[p.id]||0)<p.cost);
+  if(ev || !saving || save.done.length<6){ defiT=Math.max(defiT,25); return; }
+  defiT-=dt;
+  if(defiT<=0){ defiT=110+Math.random()*60;
+    const now=save.play||0, recent=servedLog.filter(t=>now-t<120).length;
+    const goal=Math.max(3, Math.ceil(recent*75/120*1.1)+1);
+    ev={type:'defi',t:75,max:75,n:0,goal}; sfx('vip');
+    const msg=`Défi éclair : sers ${goal} clients en 75 s !`; toast(msg); if(guestP) netToasts.push(msg); }
+}
 function served(c,mult){
+  servedLog.push(save.play||0); if(servedLog.length>200) servedLog.shift();
+  if(ev && ev.type==='defi') ev.n++;
   streak = streakT>0 ? streak+1 : 1; streakT=8; track('streak',streak,true);
   const k=c.pat/c.patMax, stars=c.settled?3:k>.55?5:k>.3?4:3;
   addRating(stars, c.special==='critic'?6:1);
@@ -1066,11 +1083,10 @@ const EVENTS = {
   influ: {icon:'phone',   name:'Influenceuse en visite', dur:60},
   rain:  {icon:'rain',    name:'Averse', dur:80},
   boss:  {icon:'crown',   name:'Le Roi des rats', dur:40},
+  defi:  {icon:'stopwatch',name:'Défi éclair', dur:75},
   marche:{icon:'basket',  name:'Jour de marché : grosses commandes', dur:60, crowd:.75, shop:0},
   rushdrive:{icon:'car',  name:'Rush au drive', dur:60, shop:1},
   gala:  {icon:'tophat',  name:'Soirée de gala : additions ×1,5', dur:75, crowd:.8, shop:2},
-  canicule:{icon:'sun',   name:'Canicule : foule et glaces qui fondent', dur:60, crowd:.6, shop:3},
-  match: {icon:'pizza',   name:'Soir de match : tablées de 3', dur:60, crowd:.75, shop:4},
 };
 function startEvent(){
   const pool=['bus','critic','influ']; if(save.done.length>=6) pool.push('invasion'); if(save.done.length>=9 && !pests.some(p=>p.kind==='boss')) pool.push('boss'); if(openTables().some(t=>t.out)) pool.push('rain','rain'); else pool.push('rain');
@@ -1203,6 +1219,7 @@ function update(dt){
   }
 
   if(contest){ contest.t-=dt; if(contest.t<=0) endContest(); }
+  if(!contest) defiTick(dt);
   // un objet oublié par un client brille quelque part en salle : il faut aller le ramasser
   lootT-=dt;
   if(!loot && lootT<=0 && save.done.length>=3){ lootT=100+Math.random()*90;
@@ -1271,9 +1288,9 @@ function updateStations(dt){
     if(delivT<=0 && (deliv?1:0)+driveQ.length<(rushD?6:4)){ delivT=(9+Math.random()*9)*(guestP?.75:1)*(rushD?.4:1);
       const prods=unlockedProducts().concat(availMenus()), want={}; let pay=0; const n=1+Math.floor(Math.random()*(2+Math.min(2,save.done.length/8)));
       for(let i=0;i<n;i++){ const pr=pick(prods); want[pr]=(want[pr]||0)+1; pay+=PRODUCTS[pr].price; }
-      const time=55*Math.sqrt(patienceMul())*(ev&&ev.type==='rushdrive'?.8:1);
+      const time=80*Math.sqrt(patienceMul())*(ev&&ev.type==='rushdrive'?.8:1);
       driveQ.push({want,got:{},time,max:time,reward:Math.round(pay*1.6),col:pick(['car','taxi','car','truck']),x:LANE_X,y:27}); sfx('pest'); }
-    driveQ.forEach(c=>c.time-=dt*.4);
+    driveQ.forEach(c=>c.time-=dt*.3);
     const gone=driveQ.filter(c=>c.time<=0); if(gone.length){ driveQ=driveQ.filter(c=>c.time>0); gone.forEach(c=>{ addRating(1); stat('driveLost'); driveOut.push({col:c.col,x:c.x,y:c.y,fade:1}); fx.push({x:c.x+.4,y:c.y-.6,txt:'Tût !',col:'#e8466a',t:0}); }); sfx('angry'); }
     if(!deliv && driveQ.length){ deliv=driveQ.shift(); }
     moveDrive(dt);
@@ -1486,7 +1503,8 @@ function visiblePads(){
   const slots=[{x:2.2,y:6.3},{x:10.6,y:6.2}];
   const out=ups.slice(0,2).map((u,i)=>({...u,...slots[i]}));
   const nx=SHOPS[(save.shop+1)%SHOPS.length];
-  out.push({id:'next',kind:'next',icon:'shop',label:nx.name,cost:Math.round(12000*MULT*costMul()),x:6.8,y:5.0});
+  const season=Math.floor((save.shop+1)/SHOPS.length)+1;
+  out.push({id:'next',kind:'next',icon:'shop',label:nx.name+(season>1?` · saison ${season}`:''),cost:Math.round(12000*MULT*costMul()),x:6.8,y:5.0});
   return out;
 }
 function unlock(pad){
@@ -1517,8 +1535,14 @@ function prestige(){
   workers.length=0; waiters.length=0; asm.carry=[]; asm.state='idle'; customers=[]; pests=[]; loot=null; deliv=null; driveQ=[]; driveOut=[]; delivT=8; meltT=0; corpses=[]; fire=null; bar.stools=[null,null,null]; BENCHES.forEach(b=>{ b.jobs=[]; b.out=[]; b.t=0; }); ev=null; bus=null; evT=140;
   player.carry=[]; if(guestP){ guestP.carry=[]; } player.x=3; player.y=5.6; streak=0; streakT=0; shownMoney=0;
   persist(); sfx('unlock');
-  openModal(`<span class="eyebrow">Nouvelle boutique · ${save.stars} ★</span><h2>Bienvenue à ${SHOP.name}</h2>
-    <p>Bravo, tu as terminé ${was}. Elle rejoint ta ville et continue de te rapporter de l'argent. Chaque étoile ajoute aussi +25 % à tes ventes, pour toujours.</p>
+  const au=n=>n.replace(/^Le /,'au ').replace(/^La /,'à la '), season=Math.floor(save.shop/SHOPS.length)+1, newSeason=season>1 && save.shop%SHOPS.length===0;
+  const head = newSeason
+    ? `<span class="eyebrow">Saison ${season} · ${save.stars} ★</span><h2>Tu as conquis la ville !</h2>
+    <p>Bravo, tu as terminé les trois boutiques. Une nouvelle saison commence ${au(SHOP.name)} : tout coûte plus cher, mais tout rapporte bien plus. Tes boutiques de la ville continuent de te rapporter de l'argent, et chaque étoile ajoute +25 % à tes ventes, pour toujours.</p>`
+    : `<span class="eyebrow">Nouvelle boutique · ${save.stars} ★</span><h2>Bienvenue ${au(SHOP.name)}</h2>
+    <p>Bravo, tu as terminé ${was}. Elle rejoint ta ville et continue de te rapporter de l'argent. Chaque étoile ajoute aussi +25 % à tes ventes, pour toujours.</p>`;
+  const dl=diff().stars, dtxt=`<p class="diffl">Difficulté : <b>${'●'.repeat(dl)}${'○'.repeat(3-dl)}</b> ${['facile','moyenne','difficile'][dl-1]}</p>`;
+  openModal(`${head}${dtxt}
     ${SHOP.intro?`<div class="offer feat"><div><h3>Nouveau ici</h3><p>${SHOP.intro}</p></div></div>`:''}
     <button class="btn gold" id="mYes">C'est parti</button>`);
   $('mYes').onclick=closeModal;
@@ -1543,7 +1567,7 @@ function spawnPest(force){
 }
 const pestSpot = p => (p.kind==='rat'||p.kind==='boss') ? {x:dropSpot(p.target.p).x+.3,y:8.55} : {x:p.target.s.x+(p.kind==='mouse'?.4:0),y:3.3};
 function updatePests(dt){
-  if(save.done.length>=2){ pestT-=dt; if(pestT<=0){ if(pests.length<2) spawnPest(); pestT=20+Math.random()*25-Math.min(save.done.length,10); } }
+  if(save.done.length>=2){ pestT-=dt; if(pestT<=0){ if(pests.length<2) spawnPest(); pestT=(30+Math.random()*28-Math.min(save.done.length,10))*diff().pest; } }
   for(const p of pests){
     p.hitT=Math.max(0,p.hitT-dt);
     const fleeing=p.state==='flee'||p.state==='leave';
@@ -2298,14 +2322,12 @@ const CB=[
   {id:'s1',kind:'shop',i:1,x0:7.0,y0:4.5,x1:12.4,y1:11.2,door:{x:9.7,y:11.75}},
   {id:'mairie',kind:'mairie',x0:17.6,y0:3.8,x1:23.0,y1:11.2,door:{x:20.3,y:11.75}},
   {id:'s2',kind:'shop',i:2,x0:23.4,y0:4.5,x1:28.8,y1:11.2,door:{x:26.1,y:11.75}},
-  {id:'s3',kind:'shop',i:3,x0:1.2,y0:16.8,x1:6.6,y1:23.4,door:{x:3.9,y:16.25},south:true},
   {id:'tailleur',kind:'tailleur',x0:7.0,y0:16.8,x1:12.4,y1:23.4,door:{x:9.7,y:16.25},south:true},
-  {id:'s4',kind:'shop',i:4,x0:17.6,y0:16.8,x1:23.0,y1:23.4,door:{x:20.3,y:16.25},south:true},
   {id:'marche',kind:'marche',x0:29.6,y0:4.5,x1:35.0,y1:11.2,door:{x:32.3,y:11.75}},
   {id:'arcade',kind:'arcade',x0:29.6,y0:16.8,x1:35.0,y1:23.4,door:{x:32.3,y:16.25},south:true},
 ];
 const FOUNTAIN={x:26.1,y:21.2,r:1.05};
-const CITY_TREES=[[2,3.4],[5,3.3],[8.5,3.4],[11.6,3.3],[18.6,3.1],[21.8,3.2],[24.5,3.4],[27.8,3.3],[24.2,17.6],[28.3,17.8],[24.3,25.6],[28.2,25.4],[2.4,24.6],[5.6,24.8],[8.6,24.7],[11.4,24.6],[18.6,24.6],[21.6,24.7],[14.9,26.5],[14.9,1.6],[30.4,3.3],[33.9,3.4],[30.3,24.7],[34.2,24.8],[29.3,13.9]];
+const CITY_TREES=[[2.0,18.0],[4.2,17.6],[5.9,18.6],[2.6,20.9],[5.0,21.3],[3.6,22.9],[18.5,18.1],[21.9,18.3],[19.1,21.5],[22.2,21.2],[20.4,23.0],[2,3.4],[5,3.3],[8.5,3.4],[11.6,3.3],[18.6,3.1],[21.8,3.2],[24.5,3.4],[27.8,3.3],[24.2,17.6],[28.3,17.8],[24.3,25.6],[28.2,25.4],[2.4,24.6],[5.6,24.8],[8.6,24.7],[11.4,24.6],[18.6,24.6],[21.6,24.7],[14.9,26.5],[14.9,1.6],[30.4,3.3],[33.9,3.4],[30.3,24.7],[34.2,24.8],[29.3,13.9]];
 const cp={x:4,y:13,walk:0,dir:1,car:true,inDoor:null};
 let cars=[], carT=0, peds=[];
 const KIND_STYLE={
@@ -2780,6 +2802,7 @@ function hud(){
       : ev.type==='influ' ? 'Influenceuse : sers-la pour faire le buzz'
       : ev.type==='invasion' ? `Invasion ! Tape-les toutes · ${Math.ceil(ev.t)} s`
       : ev.type==='boss' ? `${bossName()} pille le comptoir : tape-le !`
+      : ev.type==='defi' ? (ev.won?'Défi réussi !':`Défi éclair : ${ev.n||0}/${ev.goal} clients · ${Math.ceil(ev.t)} s`)
       : `${EVENTS[ev.type].name} · ${Math.ceil(ev.t)} s`;
     $('evtTxt').textContent = txt;
   }
@@ -3217,7 +3240,7 @@ function snapState(){
     sta:STATIONS.map(st=>[stock[st.id],r2(st.t),st.broken?1:0,r2(st.fix||0),r2(st.heat||0),r2(st.smoke||0),st.fuel===undefined?-1:st.fuel,st.tapped?1:0]),
     co:counter, be:BENCHES.map(b=>({j:b.jobs,t:r2(b.t),o:b.out})), br:[r2(bar.by),r2(bar.shake)], cp:corpses, fi:fire?{x:r2(fire.x),s:fire.state,m:fire.men.map(m=>[r2(m.x),r2(m.y),r2(m.walk||0)]),c:fire.car}:null,
     fz:staffList().map(e=>e.frozen?1:0), tb:TABLES.map(t=>[t.dirty?1:0,r2(t.cleanP||0)]),
-    dv:deliv, dq:driveQ, do:driveOut, lo:loot, ev:ev?{type:ev.type,t:r2(ev.t),max:ev.max}:null, bus:bus?{x:r2(bus.x),t:r2(bus.t)}:null,
+    dv:deliv, dq:driveQ, do:driveOut, lo:loot, ev:ev?{type:ev.type,t:r2(ev.t),max:ev.max,n:ev.n|0,goal:ev.goal||0,won:!!ev.won}:null, bus:bus?{x:r2(bus.x),t:r2(bus.t)}:null,
     ct:contest?{t:r2(contest.t),n:contest.n,goals:contest.goals}:null,
     fx:fx.slice(-40), fl:flyers.slice(-30), pf:padFlash,
     snd:sndQ.splice(0), xp:(()=>{ const n=netXP; netXP=0; return n; })(), to:netToasts.splice(0),
